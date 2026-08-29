@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Ocean English Station</title>
+    <!-- LZ-String Library untuk kompresi data URL agar tidak corrupt saat membagikan topik -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
     <style>
         :root {
             --ocean-dark: #0A3641;
@@ -507,6 +509,7 @@
 
     function renderTeacherTopicList() {
         const container = document.getElementById('teacherTopicList');
+        if (!container) return;
         container.innerHTML = '';
 
         vocabList.forEach((item, idx) => {
@@ -741,14 +744,7 @@
         });
     }
 
-    function utf8_to_b64(str) {
-        return window.btoa(unescape(encodeURIComponent(str)));
-    }
-
-    function b64_to_utf8(str) {
-        return decodeURIComponent(escape(window.atob(str)));
-    }
-
+    // Fungsi kompresi data menggunakan LZString untuk mencegah error Base64
     function generateShareableLink() {
         const config = {
             level: document.getElementById('targetLevelInput').value,
@@ -758,19 +754,24 @@
             topics: vocabList
         };
 
-        const jsonString = JSON.stringify(config);
-        const encodedData = utf8_to_b64(jsonString);
-        const baseUrl = window.location.href.split('?')[0];
-        const shareUrl = `${baseUrl}?data=${encodedData}&mode=student`;
+        try {
+            const jsonString = JSON.stringify(config);
+            const compressedData = LZString.compressToEncodedURIComponent(jsonString);
+            const baseUrl = window.location.href.split('?')[0];
+            const shareUrl = `${baseUrl}?data=${compressedData}&mode=student`;
 
-        if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                alert("✅ Link khusus SISWA berhasil disalin!\nPanel Guru otomatis disembunyikan total.");
-            }).catch(() => {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    alert("✅ Link khusus SISWA berhasil disalin!\nTopik yang disetup guru telah tersimpan rapat di dalam link.");
+                }).catch(() => {
+                    prompt("Salin link khusus siswa di bawah ini:", shareUrl);
+                });
+            } else {
                 prompt("Salin link khusus siswa di bawah ini:", shareUrl);
-            });
-        } else {
-            prompt("Salin link khusus siswa di bawah ini:", shareUrl);
+            }
+        } catch(err) {
+            console.error("Error generating link:", err);
+            alert("Terjadi kesalahan saat membuat link. Coba kurangi ukuran/jumlah file gambar.");
         }
     }
 
@@ -779,16 +780,24 @@
         const dataParam = urlParams.get('data');
         const modeParam = urlParams.get('mode');
 
+        // Jika siswa membuka dari link, sembunyikan total Panel Guru
         if (modeParam === 'student') {
             const teacherPanel = document.getElementById('teacherPanel');
             if (teacherPanel) {
-                teacherPanel.classList.add('hidden');
+                teacherPanel.style.display = 'none';
             }
         }
 
         if (dataParam) {
             try {
-                const jsonString = b64_to_utf8(dataParam);
+                // Dekompresi data topik dari URL
+                let jsonString = LZString.decompressFromEncodedURIComponent(dataParam);
+                
+                // Fallback untuk backward compatibility jika memakai b64 lama
+                if (!jsonString) {
+                    jsonString = decodeURIComponent(escape(window.atob(dataParam)));
+                }
+
                 const config = JSON.parse(jsonString);
 
                 if (config.level) {
