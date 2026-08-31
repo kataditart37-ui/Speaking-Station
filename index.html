@@ -12,6 +12,8 @@
       --text-color: #1d3557;
       --bg-color: #f0f8ff;
       --card-bg: #ffffff;
+      --success-color: #2a9d8f;
+      --warning-color: #e76f51;
     }
 
     body {
@@ -93,16 +95,43 @@
     }
 
     .btn-success {
-      background-color: #2a9d8f;
+      background-color: var(--success-color);
     }
 
     .btn-success:hover {
       background-color: #218378;
     }
 
+    .btn-mic {
+      background-color: #e63946;
+      border-radius: 50px;
+      padding: 14px 28px;
+      width: auto;
+      margin: 15px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-mic:hover {
+      background-color: #c1121f;
+    }
+
+    .btn-mic.recording {
+      animation: pulse 1.2s infinite;
+      background-color: #ff4d4d;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
     .badge-student {
       display: inline-block;
-      background-color: #e76f51;
+      background-color: var(--warning-color);
       color: white;
       padding: 4px 12px;
       border-radius: 12px;
@@ -114,6 +143,60 @@
     .hidden {
       display: none !important;
     }
+
+    /* Score & Reward Components */
+    .score-card {
+      background: #f8f9fa;
+      border: 2px dashed var(--secondary-color);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .stars-display {
+      font-size: 32px;
+      letter-spacing: 4px;
+      margin: 8px 0;
+    }
+
+    .badge-reward {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+      color: #fff;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    .badge-gold { background: linear-gradient(135deg, #f1c40f, #f39c12); }
+    .badge-silver { background: linear-gradient(135deg, #bdc3c7, #95a5a6); }
+    .badge-bronze { background: linear-gradient(135deg, #e67e22, #d35400); }
+    .badge-try { background: linear-gradient(135deg, #3498db, #2980b9); }
+
+    .score-meter {
+      height: 12px;
+      background: #e0e0e0;
+      border-radius: 6px;
+      overflow: hidden;
+      margin: 12px 0;
+    }
+
+    .score-fill {
+      height: 100%;
+      background: var(--success-color);
+      width: 0%;
+      transition: width 0.6s ease-in-out;
+    }
+
+    .sync-status {
+      font-size: 12px;
+      margin-top: 8px;
+      color: #666;
+    }
   </style>
 </head>
 <body>
@@ -124,7 +207,7 @@
       <p>Interactive English Speaking & Listening Practice</p>
     </header>
 
-    <!-- PANEL TEACHER SETUP (Hanya muncul untuk Guru) -->
+    <!-- PANEL TEACHER SETUP -->
     <div id="teacherSetupPanel" class="card">
       <h2>⚙️ Teacher Setup & Topic Management</h2>
       <p style="font-size: 14px; color: #666;">Atur materi pembelajaran di bawah ini lalu klik tombol untuk membuat link khusus siswa.</p>
@@ -173,7 +256,7 @@
       </button>
     </div>
 
-    <!-- PANEL STUDENT STATION (Selalu muncul untuk Siswa & Guru) -->
+    <!-- PANEL STUDENT STATION -->
     <div id="studentStationPanel" class="card">
       <div id="studentBadge" class="badge-student hidden">Mode Siswa (Terkunci)</div>
       <h2>🎙️ Student Practice Station</h2>
@@ -192,7 +275,7 @@
         🚀 Start Speaking Practice
       </button>
 
-      <!-- Area Tempat Interaksi Soal/AI -->
+      <!-- Area Interaksi Soal/AI -->
       <div id="practiceArea" style="margin-top: 20px; text-align: center;">
         <p id="aiPromptText" style="font-size: 18px; font-weight: 500;">Click 'Start Speaking Practice' when ready!</p>
       </div>
@@ -200,7 +283,9 @@
   </div>
 
   <script>
-    // Variable Konfigurasi Utama
+    // URL Google Apps Script Anda (Jika ada)
+    const GOOGLE_SHEET_WEB_APP_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE";
+
     let activeConfig = {
       level: 'Grade 2',
       topic: 'Ocean Animals',
@@ -209,81 +294,137 @@
       endDate: ''
     };
 
-    // 1. FUNGSI UNTUK MENG-GENERATE LINK KHUSUS SISWA (DIPANGGIL OLEH GURU)
+    const targetPrompts = {
+      'Ocean Animals': "I see a blue dolphin swimming in the ocean.",
+      'Daily Routines': "I wash my hands and eat breakfast every morning.",
+      'My School & Classroom': "There are many colorful books on my desk.",
+      'Family & Friends': "I love playing soccer with my best friends."
+    };
+
+    let recognition;
+    let isRecording = false;
+
+    // 1. GENERATE LINK PENDEK & RAPI
     function generateShareableLink() {
-      // Ambil nilai dari input form guru
-      const configData = {
-        level: document.getElementById('levelSelect').value,
-        topic: document.getElementById('topicSelect').value,
-        voice: document.getElementById('voiceSelect').value,
-        startDate: document.getElementById('startDate').value,
-        endDate: document.getElementById('endDate').value
-      };
+      const level = document.getElementById('levelSelect').value;
+      const topic = document.getElementById('topicSelect').value;
+      const voice = document.getElementById('voiceSelect').value;
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
 
-      // Encrypt data menjadi string URL yang aman
-      const encodedData = encodeURIComponent(JSON.stringify(configData));
+      // Ambil Base URL tanpa query parameter lama
+      const baseUrl = window.location.origin + window.location.pathname;
 
-      // Sisipkan penanda mode=student di akhir URL
-      const shareableURL = `${window.location.origin}${window.location.pathname}?data=${encodedData}&mode=student`;
+      // Gunakan URLSearchParams dengan singkatan parameter agar link sangat ringkas
+      const params = new URLSearchParams();
+      params.set('mode', 'student');
+      params.set('l', level);
+      params.set('t', topic);
+      params.set('v', voice);
+      if (startDate) params.set('s', startDate);
+      if (endDate) params.set('e', endDate);
 
-      // Proses menyalin ke clipboard
+      const shareableURL = `${baseUrl}?${params.toString()}`;
+
+      // Salin ke Clipboard secara aman lintas device
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(shareableURL).then(() => {
-          alert("✅ Link Khusus Siswa Berhasil Disalin!\n\nLink ini dapat langsung dibagikan ke WhatsApp siswa. Siswa tidak akan bisa mengubah pengaturan materi.");
-        }).catch(() => {
-          prompt("Salin link khusus siswa di bawah ini:", shareableURL);
-        });
+          alert("✅ Link Ringkas Siswa Berhasil Disalin!\n\nLink ini sudah optimal dan dapat langsung dikirim ke WhatsApp siswa.");
+        }).catch(() => prompt("Salin link khusus siswa di bawah ini:", shareableURL));
       } else {
         prompt("Salin link khusus siswa di bawah ini:", shareableURL);
       }
     }
 
-    // 2. LOGIKA OTOMATIS SAAT HALAMAN DIBUKA (READ URL PARAMETERS)
+    // 2. DETEKSI PARAMETER URL SAAT HALAMAN DIBUKA
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
       const mode = urlParams.get('mode');
-      const encodedData = urlParams.get('data');
 
       const teacherPanel = document.getElementById('teacherSetupPanel');
       const studentBadge = document.getElementById('studentBadge');
 
-      // JIKA DIBUKA OLEH SISWA (Ada parameter mode=student)
       if (mode === 'student') {
-        // A. Sembunyikan Panel Guru secara permanen
-        if (teacherPanel) {
-          teacherPanel.classList.add('hidden');
-        }
+        if (teacherPanel) teacherPanel.classList.add('hidden');
+        if (studentBadge) studentBadge.classList.remove('hidden');
 
-        // B. Tampilkan indikator mode siswa
-        if (studentBadge) {
-          studentBadge.classList.remove('hidden');
-        }
+        // Parsing parameter ringkas
+        if (urlParams.get('l')) activeConfig.level = urlParams.get('l');
+        if (urlParams.get('t')) activeConfig.topic = urlParams.get('t');
+        if (urlParams.get('v')) activeConfig.voice = urlParams.get('v');
+        if (urlParams.get('s')) activeConfig.startDate = urlParams.get('s');
+        if (urlParams.get('e')) activeConfig.endDate = urlParams.get('e');
 
-        // C. Baca & Terapkan Konfigurasi Materi dari Guru
-        if (encodedData) {
-          try {
-            const decodedConfig = JSON.parse(decodeURIComponent(encodedData));
-            activeConfig = { ...activeConfig, ...decodedConfig };
-          } catch (err) {
-            console.error("Gagal membaca data materi dari link.", err);
-          }
+        // Validasi Tanggal
+        const today = new Date().toISOString().split('T')[0];
+        if (activeConfig.startDate && today < activeConfig.startDate) {
+          alert("⚠️ Akses tugas ini belum dibuka.");
+        } else if (activeConfig.endDate && today > activeConfig.endDate) {
+          alert("⚠️ Masa pengerjaan tugas ini sudah berakhir.");
         }
-      } else {
-        // JIKA DIBUKA OLEH GURU (Tanpa parameter mode=student)
-        console.log("Mode Guru Aktif: Semua menu pengaturan ditampilkan.");
       }
 
-      // Perbarui Tampilan Topik dan Level di Layar Siswa
       updateDisplayInfo();
+      initSpeechRecognition();
     });
 
-    // Update Info di Layar
     function updateDisplayInfo() {
       document.getElementById('displayTopic').innerText = activeConfig.topic;
       document.getElementById('displayLevel').innerText = activeConfig.level;
     }
 
-    // Fungsi Latihan Siswa
+    function speakText(text, callback) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = activeConfig.voice.includes('UK') ? 'en-GB' : 'en-US';
+        utterance.rate = 0.9;
+        if (callback) utterance.onend = callback;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    function initSpeechRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) return;
+
+      recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        isRecording = true;
+        const micBtn = document.getElementById('micBtn');
+        if (micBtn) {
+          micBtn.classList.add('recording');
+          micBtn.innerText = '🔴 Listening... Speak Now!';
+        }
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        processStudentAnswer(transcript);
+      };
+
+      recognition.onerror = () => {
+        resetMicButton();
+        alert("Mikrofon mengalami kendala atau tidak diizinkan. Silakan coba lagi.");
+      };
+
+      recognition.onend = () => {
+        resetMicButton();
+      };
+    }
+
+    function resetMicButton() {
+      isRecording = false;
+      const micBtn = document.getElementById('micBtn');
+      if (micBtn) {
+        micBtn.classList.remove('recording');
+        micBtn.innerText = '🎙️ Tap to Speak Answer';
+      }
+    }
+
     function startPractice() {
       const name = document.getElementById('studentName').value.trim();
       if (!name) {
@@ -291,7 +432,127 @@
         return;
       }
 
-      document.getElementById('aiPromptText').innerText = `Hello ${name}! Welcome to the ${activeConfig.topic} station. Let's start!`;
+      const targetSentence = targetPrompts[activeConfig.topic] || targetPrompts['Ocean Animals'];
+      const practiceArea = document.getElementById('practiceArea');
+
+      practiceArea.innerHTML = `
+        <p style="font-size: 14px; color: #666; margin-bottom: 4px;">Listen and repeat this sentence:</p>
+        <p id="targetSentenceText" style="font-size: 20px; font-weight: bold; color: var(--primary-color); background: #eef9ff; padding: 12px; border-radius: 8px;">
+          "${targetSentence}"
+        </p>
+        <button id="micBtn" class="btn btn-mic" onclick="toggleListening()">
+          🎙️ Tap to Speak Answer
+        </button>
+        <div id="feedbackContainer"></div>
+      `;
+
+      speakText(`Hello ${name}. Please repeat after me: ${targetSentence}`);
+    }
+
+    function toggleListening() {
+      if (!recognition) {
+        alert("Fitur pengenal suara tidak didukung di browser ini. Silakan gunakan Google Chrome.");
+        return;
+      }
+      if (isRecording) {
+        recognition.stop();
+      } else {
+        recognition.start();
+      }
+    }
+
+    function calculateAccuracy(target, spoken) {
+      const clean = (str) => str.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().split(/\s+/);
+      const targetWords = clean(target);
+      const spokenWords = clean(spoken);
+
+      if (spokenWords.length === 0 || targetWords.length === 0) return 0;
+
+      let matchedWords = 0;
+      targetWords.forEach(word => {
+        if (spokenWords.includes(word)) matchedWords++;
+      });
+
+      const accuracy = Math.round((matchedWords / targetWords.length) * 100);
+      return Math.min(100, accuracy);
+    }
+
+    function saveToGoogleSheets(studentData) {
+      const statusElement = document.getElementById('syncStatus');
+      if (GOOGLE_SHEET_WEB_APP_URL === "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE") {
+        if (statusElement) statusElement.innerText = "ℹ️ Hasil tersimpan secara lokal di layar.";
+        return;
+      }
+
+      fetch(GOOGLE_SHEET_WEB_APP_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(studentData)
+      })
+      .then(() => {
+        if (statusElement) statusElement.innerText = "✅ Hasil berhasil dikirim ke Google Sheets Guru!";
+      })
+      .catch(err => {
+        if (statusElement) statusElement.innerText = "❌ Gagal mengirim hasil. Periksa koneksi internet.";
+      });
+    }
+
+    function processStudentAnswer(spokenText) {
+      const name = document.getElementById('studentName').value.trim();
+      const targetSentence = targetPrompts[activeConfig.topic] || targetPrompts['Ocean Animals'];
+      const score = calculateAccuracy(targetSentence, spokenText);
+
+      let stars = '⭐';
+      let badgeLabel = 'Keep Trying!';
+      let badgeClass = 'badge-try';
+      let audioFeedback = "Good effort! Try pronouncing each word clearly.";
+
+      if (score >= 90) {
+        stars = '⭐⭐⭐⭐⭐';
+        badgeLabel = '🏆 Ocean Master (Gold)';
+        badgeClass = 'badge-gold';
+        audioFeedback = "Outstanding! Perfect pronunciation!";
+      } else if (score >= 70) {
+        stars = '⭐⭐⭐⭐';
+        badgeLabel = '🥇 Marine Scholar (Silver)';
+        badgeClass = 'badge-silver';
+        audioFeedback = "Great job! Your speaking is very clear!";
+      } else if (score >= 50) {
+        stars = '⭐⭐⭐';
+        badgeLabel = '🥈 Explorer Badge (Bronze)';
+        badgeClass = 'badge-bronze';
+        audioFeedback = "Nice try! Let's practice one more time!";
+      }
+
+      const feedbackContainer = document.getElementById('feedbackContainer');
+      feedbackContainer.innerHTML = `
+        <div class="score-card">
+          <p style="margin: 0; font-size: 14px; color: #555;">You said: <em>"${spokenText}"</em></p>
+          
+          <div style="font-size: 24px; font-weight: bold; margin-top: 10px; color: var(--primary-color);">
+            Accuracy Score: ${score}%
+          </div>
+          
+          <div class="score-meter">
+            <div class="score-fill" style="width: ${score}%;"></div>
+          </div>
+
+          <div class="stars-display">${stars}</div>
+          <div><span class="badge-reward ${badgeClass}">${badgeLabel}</span></div>
+          <div id="syncStatus" class="sync-status">Menyimpan hasil ke Google Sheets...</div>
+        </div>
+      `;
+
+      saveToGoogleSheets({
+        studentName: name,
+        topic: activeConfig.topic,
+        level: activeConfig.level,
+        score: score,
+        badge: badgeLabel
+      });
+
+      speakText(audioFeedback);
     }
   </script>
 </body>
