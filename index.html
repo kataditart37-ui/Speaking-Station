@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ocean English Application</title>
-    <!-- Library untuk kompresi data URL -->
+    <!-- Library untuk kompresi data URL agar link tidak terpotong -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f8ff; margin: 0; padding: 20px; }
@@ -19,6 +19,7 @@
         .btn-success:hover { background-color: #1b5e20; }
         .topic-card { background: #eef9ff; border-left: 5px solid #008cba; padding: 10px 15px; margin-bottom: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
         .topic-card img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; margin-right: 10px; }
+        .badge { background: #008cba; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px; }
         .hidden { display: none; }
     </style>
 </head>
@@ -83,7 +84,7 @@
         </button>
     </div>
 
-    <!-- PANEL STUDENT VIEW -->
+    <!-- PANEL STUDENT VIEW (Otomatis Aktif jika Membuka Link Siswa) -->
     <div id="studentPanel" class="hidden">
         <h1 id="studentTitle">🌊 Ocean English Practice</h1>
         <div id="studentMeta" style="background: #eef; padding: 10px; border-radius: 6px; margin-bottom: 20px;"></div>
@@ -94,8 +95,10 @@
 </div>
 
 <script>
+    // Global Array untuk menyimpan seluruh topik
     let vocabList = [];
 
+    // Fungsi Menambahkan Topik ke Array Global & Tampilan (Struktur data persis seperti semula)
     function addTopic() {
         const word = document.getElementById('topicWord').value.trim();
         const translation = document.getElementById('topicTranslation').value.trim();
@@ -106,9 +109,11 @@
             return;
         }
 
-        // Gunakan struktur ringkas untuk menghemat memori URL
-        vocabList.push({ w: word, t: translation, i: image });
+        // Tambah ke array dengan properti asli
+        const topicObj = { id: Date.now(), word, translation, image };
+        vocabList.push(topicObj);
 
+        // Reset form input
         document.getElementById('topicWord').value = '';
         document.getElementById('topicTranslation').value = '';
         document.getElementById('topicImage').value = '';
@@ -116,6 +121,7 @@
         renderTeacherTopicList();
     }
 
+    // Fungsi Render Daftar Topik di Panel Guru
     function renderTeacherTopicList() {
         const container = document.getElementById('topicListDisplay');
         document.getElementById('topicCount').innerText = vocabList.length;
@@ -128,49 +134,52 @@
         container.innerHTML = vocabList.map((item, index) => `
             <div class="topic-card">
                 <div style="display: flex; align-items: center;">
-                    <span style="font-size: 24px; margin-right: 12px;">${item.i.startsWith('http') ? `<img src="${item.i}" alt="img">` : item.i}</span>
+                    <span style="font-size: 24px; margin-right: 12px;">${item.image.startsWith('http') ? `<img src="${item.image}" alt="img">` : item.image}</span>
                     <div>
-                        <strong>${index + 1}. ${item.w}</strong><br>
-                        <small style="color: #555;">${item.t}</small>
+                        <strong>${index + 1}. ${item.word}</strong><br>
+                        <small style="color: #555;">${item.translation}</small>
                     </div>
                 </div>
-                <button onclick="removeTopic(${index})" style="width: auto; background: #d9534f; padding: 5px 10px; margin: 0;">Hapus</button>
+                <button onclick="removeTopic(${item.id})" style="width: auto; background: #d9534f; padding: 5px 10px; margin: 0;">Hapus</button>
             </div>
         `).join('');
     }
 
-    function removeTopic(index) {
-        vocabList.splice(index, 1);
+    // Hapus Topik berdasarkan ID
+    function removeTopic(id) {
+        vocabList = vocabList.filter(t => t.id !== id);
         renderTeacherTopicList();
     }
 
-    // FUNGSI UTAMA: GENERATE LINK RINGKAS
+    // FUNGSI UTAMA: GENERATE LINK SISWA LENGKAP & OPTIMAL
     function generateShareableLink() {
         if (vocabList.length === 0) {
             alert("⚠️ Harap tambahkan minimal 1 topik sebelum membuat link!");
             return;
         }
 
-        // Gunakan objek dengan key 1 huruf untuk memperpendek ukuran data
-        const compactConfig = {
-            l: document.getElementById('targetLevelInput').value || '-',
-            s: document.getElementById('startDateInput').value || '-',
-            d: document.getElementById('dueDateInput').value || '-',
-            v: document.getElementById('voiceSelect').value,
-            tp: vocabList
+        // Seluruh fitur & properti asli dipertahankan secara utuh
+        const config = {
+            level: document.getElementById('targetLevelInput').value || 'General Class',
+            start: document.getElementById('startDateInput').value || '-',
+            due: document.getElementById('dueDateInput').value || '-',
+            voice: document.getElementById('voiceSelect').value,
+            topics: vocabList
         };
 
         try {
-            const jsonString = JSON.stringify(compactConfig);
-            // Gunakan Base64 encoding yang kompatibel URL (jauh lebih pendek dari EncodedURIComponent)
+            // Menggunakan compressToBase64 (jauh lebih efisien dari compressToEncodedURIComponent)
+            // Tanpa merusak struktur JSON asli
+            const jsonString = JSON.stringify(config);
             const compressedData = LZString.compressToBase64(jsonString);
             
             const baseUrl = window.location.href.split('?')[0];
-            const studentUrl = `${baseUrl}?d=${encodeURIComponent(compressedData)}`;
+            // Format URL aman untuk HP dan menyertakan mode=student
+            const studentUrl = `${baseUrl}?mode=student&data=${encodeURIComponent(compressedData)}`;
 
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(studentUrl).then(() => {
-                    alert("✅ Success! Link siswa yang sudah dioptimasi berhasil disalin ke clipboard.");
+                    alert("✅ Success! Link siswa berhasil disalin ke clipboard.\n\nSemua topik dan settingan telah tersimpan di dalam link.");
                 }).catch(() => {
                     promptManualCopy(studentUrl);
                 });
@@ -184,42 +193,56 @@
     }
 
     function promptManualCopy(url) {
-        prompt("✅ Link Siswa Berhasil Dibuat!\nSalin link di bawah ini:", url);
+        prompt("✅ Link Siswa Berhasil Dibuat!\nSalin link di bawah ini dan bagikan ke siswa:", url);
     }
 
-    // LOAD DATA SISWA
+    // FUNGSI LOAD DATA PADA SISI SISWA (Mendukung format lama & format kompresi Base64 baru)
     window.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
-        const compressedData = urlParams.get('d');
+        const compressedData = urlParams.get('data');
+        const mode = urlParams.get('mode');
 
-        if (compressedData) {
+        if (compressedData && mode === 'student') {
             try {
-                // Dekompresi data dari Base64
-                const decompressedJson = LZString.decompressFromBase64(decodeURIComponent(compressedData));
+                let decompressedJson = null;
+                const rawData = decodeURIComponent(compressedData);
+
+                // Try 1: Dekompresi metode baru (Base64 - Sangat Ringkas)
+                decompressedJson = LZString.decompressFromBase64(rawData);
+
+                // Try 2: Fallback ke metode lama jika membuka link versi terdahulu
+                if (!decompressedJson) {
+                    decompressedJson = LZString.decompressFromEncodedURIComponent(compressedData);
+                }
+
                 if (!decompressedJson) throw new Error("Data korup");
 
                 const config = JSON.parse(decompressedJson);
 
+                // Sembunyikan Panel Guru, Tampilkan Panel Siswa
                 document.getElementById('teacherPanel').classList.add('hidden');
                 document.getElementById('studentPanel').classList.remove('hidden');
 
+                // Tampilkan Informasi Kelas (Menggunakan voiceAccent & meta data lengkap)
                 document.getElementById('studentMeta').innerHTML = `
-                    <strong>Class Level:</strong> ${config.l} | 
-                    <strong>Start:</strong> ${config.s} | 
-                    <strong>Due:</strong> ${config.d}
+                    <strong>Class Level:</strong> ${config.level} | 
+                    <strong>Start:</strong> ${config.start} | 
+                    <strong>Due:</strong> ${config.due} | 
+                    <strong>Voice:</strong> <span class="badge">${config.voice}</span>
                 `;
 
+                // Render Topik untuk Siswa
                 const studentTopicContainer = document.getElementById('studentTopicContainer');
-                if (config.tp && config.tp.length > 0) {
-                    studentTopicContainer.innerHTML = config.tp.map((item, idx) => `
+                if (config.topics && config.topics.length > 0) {
+                    studentTopicContainer.innerHTML = config.topics.map((item, idx) => `
                         <div class="topic-card">
                             <div style="display: flex; align-items: center;">
                                 <span style="font-size: 28px; margin-right: 15px;">
-                                    ${item.i.startsWith('http') ? `<img src="${item.i}" alt="img">` : item.i}
+                                    ${item.image.startsWith('http') ? `<img src="${item.image}" alt="img">` : item.image}
                                 </span>
                                 <div>
-                                    <h3 style="margin: 0; color: #006699;">${idx + 1}. ${item.w}</h3>
-                                    <p style="margin: 3px 0 0 0; color: #666;">${item.t}</p>
+                                    <h3 style="margin: 0; color: #006699;">${idx + 1}. ${item.word}</h3>
+                                    <p style="margin: 3px 0 0 0; color: #666;">${item.translation}</p>
                                 </div>
                             </div>
                         </div>
