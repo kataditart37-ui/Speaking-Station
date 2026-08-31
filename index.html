@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ocean English Application</title>
-    <!-- Library untuk kompresi data URL agar link tidak terpotong -->
+    <!-- Library LZString untuk kompresi data URL -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f8ff; margin: 0; padding: 20px; }
@@ -21,6 +21,7 @@
         .topic-card img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; margin-right: 10px; }
         .badge { background: #008cba; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px; }
         .hidden { display: none; }
+        .output-box { margin-top: 15px; padding: 10px; background: #fff3cd; border: 1px solid #ffeeba; border-radius: 6px; word-break: break-all; }
     </style>
 </head>
 <body>
@@ -82,9 +83,16 @@
         <button type="button" class="btn-success" onclick="generateShareableLink()" style="padding: 15px; font-size: 16px;">
             🔗 Generate Shareable Link for Students
         </button>
+
+        <!-- Container untuk menampilkan link secara langsung jika clipboard gagal -->
+        <div id="linkResultBox" class="output-box hidden">
+            <strong>Link Siswa Berhasil Dibuat!</strong>
+            <p style="font-size: 12px; margin: 5px 0; color: #856404;">Salin link di bawah ini dan bagikan ke siswa:</p>
+            <input type="text" id="generatedLinkInput" readonly onclick="this.select()">
+        </div>
     </div>
 
-    <!-- PANEL STUDENT VIEW (Otomatis Aktif jika Membuka Link Siswa) -->
+    <!-- PANEL STUDENT VIEW -->
     <div id="studentPanel" class="hidden">
         <h1 id="studentTitle">🌊 Ocean English Practice</h1>
         <div id="studentMeta" style="background: #eef; padding: 10px; border-radius: 6px; margin-bottom: 20px;"></div>
@@ -95,10 +103,8 @@
 </div>
 
 <script>
-    // Global Array untuk menyimpan seluruh topik
     let vocabList = [];
 
-    // Fungsi Menambahkan Topik ke Array Global & Tampilan (Struktur data persis seperti semula)
     function addTopic() {
         const word = document.getElementById('topicWord').value.trim();
         const translation = document.getElementById('topicTranslation').value.trim();
@@ -109,11 +115,9 @@
             return;
         }
 
-        // Tambah ke array dengan properti asli
         const topicObj = { id: Date.now(), word, translation, image };
         vocabList.push(topicObj);
 
-        // Reset form input
         document.getElementById('topicWord').value = '';
         document.getElementById('topicTranslation').value = '';
         document.getElementById('topicImage').value = '';
@@ -121,7 +125,6 @@
         renderTeacherTopicList();
     }
 
-    // Fungsi Render Daftar Topik di Panel Guru
     function renderTeacherTopicList() {
         const container = document.getElementById('topicListDisplay');
         document.getElementById('topicCount').innerText = vocabList.length;
@@ -145,20 +148,17 @@
         `).join('');
     }
 
-    // Hapus Topik berdasarkan ID
     function removeTopic(id) {
         vocabList = vocabList.filter(t => t.id !== id);
         renderTeacherTopicList();
     }
 
-    // FUNGSI UTAMA: GENERATE LINK SISWA LENGKAP & OPTIMAL
     function generateShareableLink() {
         if (vocabList.length === 0) {
             alert("⚠️ Harap tambahkan minimal 1 topik sebelum membuat link!");
             return;
         }
 
-        // Seluruh fitur & properti asli dipertahankan secara utuh
         const config = {
             level: document.getElementById('targetLevelInput').value || 'General Class',
             start: document.getElementById('startDateInput').value || '-',
@@ -168,35 +168,40 @@
         };
 
         try {
-            // Menggunakan compressToBase64 (jauh lebih efisien dari compressToEncodedURIComponent)
-            // Tanpa merusak struktur JSON asli
+            // Menggunakan Kompresi EncodeURIComponent yang Ringkas & Sangat Aman di URL HP
             const jsonString = JSON.stringify(config);
-            const compressedData = LZString.compressToBase64(jsonString);
+            const compressedData = LZString.compressToEncodedURIComponent(jsonString);
             
             const baseUrl = window.location.href.split('?')[0];
-            // Format URL aman untuk HP dan menyertakan mode=student
-            const studentUrl = `${baseUrl}?mode=student&data=${encodeURIComponent(compressedData)}`;
+            const studentUrl = `${baseUrl}?mode=student&data=${compressedData}`;
 
+            // Tampilkan ke Input Box hasil link
+            const resultBox = document.getElementById('linkResultBox');
+            const linkInput = document.getElementById('generatedLinkInput');
+            resultBox.classList.remove('hidden');
+            linkInput.value = studentUrl;
+
+            // Percobaan salin otomatis ke Clipboard
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(studentUrl).then(() => {
-                    alert("✅ Success! Link siswa berhasil disalin ke clipboard.\n\nSemua topik dan settingan telah tersimpan di dalam link.");
+                    alert("✅ Success! Link siswa berhasil disalin ke clipboard.\n\nLink juga dapat dilihat di kotak kuning bawah button.");
                 }).catch(() => {
-                    promptManualCopy(studentUrl);
+                    showFallbackCopyPrompt(studentUrl);
                 });
             } else {
-                promptManualCopy(studentUrl);
+                showFallbackCopyPrompt(studentUrl);
             }
         } catch (err) {
             console.error("Gagal meng-generate link:", err);
-            alert("❌ Terjadi kesalahan saat memproses link.");
+            alert("❌ Terjadi kesalahan saat membuat link. Pastikan CDN LZString sudah dimuat.");
         }
     }
 
-    function promptManualCopy(url) {
-        prompt("✅ Link Siswa Berhasil Dibuat!\nSalin link di bawah ini dan bagikan ke siswa:", url);
+    function showFallbackCopyPrompt(url) {
+        alert("✅ Link Siswa Berhasil Dibuat!\nSilakan salin link yang muncul pada kotak kuning di bawah tombol.");
     }
 
-    // FUNGSI LOAD DATA PADA SISI SISWA (Mendukung format lama & format kompresi Base64 baru)
+    // MEMBACA URL SAAT SISWA MEMBUKA LINK
     window.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
         const compressedData = urlParams.get('data');
@@ -204,26 +209,21 @@
 
         if (compressedData && mode === 'student') {
             try {
-                let decompressedJson = null;
-                const rawData = decodeURIComponent(compressedData);
+                let decompressedJson = LZString.decompressFromEncodedURIComponent(compressedData);
 
-                // Try 1: Dekompresi metode baru (Base64 - Sangat Ringkas)
-                decompressedJson = LZString.decompressFromBase64(rawData);
-
-                // Try 2: Fallback ke metode lama jika membuka link versi terdahulu
+                // Fallback dekompresi metode lama jika menggunakan link versi sebelumnya
                 if (!decompressedJson) {
-                    decompressedJson = LZString.decompressFromEncodedURIComponent(compressedData);
+                    decompressedJson = LZString.decompressFromBase64(decodeURIComponent(compressedData));
                 }
 
-                if (!decompressedJson) throw new Error("Data korup");
+                if (!decompressedJson) throw new Error("Data korup atau tidak valid");
 
                 const config = JSON.parse(decompressedJson);
 
-                // Sembunyikan Panel Guru, Tampilkan Panel Siswa
+                // Tampilkan Panel Siswa
                 document.getElementById('teacherPanel').classList.add('hidden');
                 document.getElementById('studentPanel').classList.remove('hidden');
 
-                // Tampilkan Informasi Kelas (Menggunakan voiceAccent & meta data lengkap)
                 document.getElementById('studentMeta').innerHTML = `
                     <strong>Class Level:</strong> ${config.level} | 
                     <strong>Start:</strong> ${config.start} | 
@@ -231,7 +231,6 @@
                     <strong>Voice:</strong> <span class="badge">${config.voice}</span>
                 `;
 
-                // Render Topik untuk Siswa
                 const studentTopicContainer = document.getElementById('studentTopicContainer');
                 if (config.topics && config.topics.length > 0) {
                     studentTopicContainer.innerHTML = config.topics.map((item, idx) => `
@@ -253,7 +252,7 @@
 
             </div> catch (e) {
                 console.error("Gagal membaca data link siswa:", e);
-                alert("❌ Link tidak valid atau data topik telah rusak.");
+                alert("❌ Gagal membaca link! Pastikan link tersalin lengkap tanpa terpotong.");
             }
         }
     });
