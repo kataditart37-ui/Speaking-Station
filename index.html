@@ -3,1079 +3,251 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Ocean English Station</title>
+    <title>Ocean English Application</title>
+    <!-- Library untuk kompresi data URL agar link tidak terpotong -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
     <style>
-        :root {
-            --ocean-dark: #0A3641;
-            --ocean-blue: #0077B6;
-            --ocean-cyan: #00B4D8;
-            --ocean-light: #CAF0F8;
-            --coral-red: #FF6B6B;
-            --sand-yellow: #FFE66D;
-            --success: #2EC4B6;
-            --warning: #FF9F1C;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(180deg, #0077B6 0%, #03045E 100%);
-            color: #333;
-            margin: 0;
-            padding: 15px;
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 900px;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 24px;
-            box-shadow: 0 12px 30px rgba(0,0,0,0.3);
-            border: 4px solid var(--ocean-cyan);
-            box-sizing: border-box;
-        }
-
-        header {
-            text-align: center;
-            border-bottom: 3px dashed var(--ocean-cyan);
-            padding-bottom: 15px;
-            margin-bottom: 20px;
-        }
-
-        h1 { color: var(--ocean-dark); margin: 0 0 5px 0; font-size: 24px; }
-
-        .section-box {
-            background: #F0F9FF;
-            border: 2px solid #BAE6FD;
-            border-radius: 16px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-
-        .teacher-panel {
-            background: #FFFBEB;
-            border: 2px solid #FDE68A;
-        }
-
-        label { font-weight: bold; color: var(--ocean-dark); display: block; margin-bottom: 5px; font-size: 14px; }
-
-        input[type="text"], input[type="password"], input[type="datetime-local"], select, input[type="file"] {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #93C5FD;
-            border-radius: 10px;
-            box-sizing: border-box;
-            font-size: 14px;
-            margin-bottom: 10px;
-            background: #FFF;
-        }
-
-        .flashcard-area {
-            text-align: center;
-            background: linear-gradient(135deg, #E0F2FE 0%, #FFFFFF 100%);
-            border: 4px dashed var(--ocean-cyan);
-            border-radius: 24px;
-            padding: 15px;
-            margin: 20px 0;
-            position: relative;
-        }
-
-        .image-container {
-            width: 220px;
-            height: 220px;
-            margin: 10px auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 24px;
-            background: #FFF;
-            border: 5px solid var(--sand-yellow);
-            overflow: hidden;
-            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
-            padding: 8px;
-            box-sizing: border-box;
-        }
-
-        .image-container img { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: contain;
-        }
-        
-        .image-container .emoji-fallback { font-size: 90px; }
-
-        .feedback-overlay {
-            display: none;
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255, 255, 255, 0.96);
-            border-radius: 20px;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 20;
-        }
-
-        .feedback-emoji { font-size: 70px; margin-bottom: 10px; }
-        .feedback-text { font-size: 20px; font-weight: bold; color: var(--ocean-dark); text-align: center; }
-
-        .btn {
-            background: var(--ocean-blue);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 4px 0 #005F92;
-        }
-
-        .btn:disabled { background: #A0AEC0; box-shadow: none; cursor: not-allowed; }
-        .btn-danger { background: var(--coral-red); box-shadow: 0 4px 0 #D93838; }
-        .btn-success { background: #059669; box-shadow: 0 4px 0 #047857; }
-
-        .btn-mic {
-            background: var(--coral-red);
-            box-shadow: 0 4px 0 #D93838;
-            width: 100%;
-            font-size: 16px;
-            margin-top: 15px;
-        }
-
-        .btn-mic.listening {
-            animation: pulse 1s infinite alternate;
-            background: #E63946;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(0.98); }
-            100% { transform: scale(1.02); }
-        }
-
-        .nav-controls {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .topic-list-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #FFF;
-            padding: 10px;
-            border-radius: 10px;
-            margin-bottom: 8px;
-            border: 1px solid #FDE68A;
-            font-size: 13px;
-        }
-
-        .leaderboard-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            background: #FFF;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        .leaderboard-table th, .leaderboard-table td {
-            border: 1px solid #E2E8F0;
-            padding: 8px;
-            text-align: left;
-            font-size: 12px;
-        }
-
-        .leaderboard-table th { background: var(--ocean-blue); color: white; }
-
-        .chat-box {
-            height: 100px;
-            overflow-y: auto;
-            border: 2px solid #BAE6FD;
-            background: #FFF;
-            padding: 10px;
-            border-radius: 10px;
-            font-size: 12px;
-        }
-
-        .msg-ai { color: var(--ocean-blue); font-weight: bold; margin-bottom: 5px; }
-        .msg-user { color: var(--ocean-dark); margin-bottom: 5px; padding-left: 10px; }
-        
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: bold;
-            margin-top: 5px;
-        }
-        .status-active { background: #D1FAE5; color: #065F46; }
-        .status-closed { background: #FEE2E2; color: #991B1B; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f8ff; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #006699; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #333; }
+        input, select, button { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        button { background-color: #008cba; color: white; font-weight: bold; border: none; cursor: pointer; margin-top: 10px; }
+        button:hover { background-color: #005f73; }
+        .btn-success { background-color: #2e7d32; }
+        .btn-success:hover { background-color: #1b5e20; }
+        .topic-card { background: #eef9ff; border-left: 5px solid #008cba; padding: 10px 15px; margin-bottom: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
+        .topic-card img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; margin-right: 10px; }
+        .badge { background: #008cba; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <header>
-        <h1>🌊 AI Ocean English Station 🐬</h1>
-        <p style="margin: 0; color: var(--ocean-blue); font-weight: bold;" id="displayLevel">Target Level: Grade 1 Elementary</p>
-        <div id="sessionStatus" class="status-badge status-active">Session Active</div>
-    </header>
-
-    <!-- TEACHER SETUP PANEL -->
-    <details class="section-box teacher-panel" id="teacherPanel">
-        <summary style="font-weight: bold; cursor: pointer; color: #B45309;" onclick="verifyTeacherAccess(event)">⚙️ Teacher Setup & Topic Management (Protected)</summary>
-        <div id="teacherContent" style="margin-top: 15px;">
-            <div style="background: #FEF3C7; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #FCD34D;">
-                <label style="color: #92400E;">🔒 Set Teacher Passcode:</label>
-                <input type="password" id="teacherPasscode" placeholder="Kosongkan jika tidak ingin dikunci password">
-            </div>
-
-            <label>1. Target Level Name:</label>
-            <input type="text" id="targetLevelInput" value="Grade 1 Elementary" onchange="updateLevel()">
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <div>
-                    <label>2. Start Date & Time:</label>
-                    <input type="datetime-local" id="startDateInput" onchange="checkScheduleStatus()">
-                </div>
-                <div>
-                    <label>3. Due Date & Time:</label>
-                    <input type="datetime-local" id="dueDateInput" onchange="checkScheduleStatus()">
-                </div>
-            </div>
-
-            <label>4. Select Natural AI Voice:</label>
-            <select id="voiceSelect" onchange="lockSelectedVoice()"></select>
-
-            <hr style="border: 1px dashed #FDE68A; margin: 15px 0;">
-
-            <!-- LIST OF CREATED TOPICS -->
-            <label>5. Created Topics List:</label>
-            <div id="teacherTopicList" style="margin-bottom: 15px;"></div>
-
-            <!-- TOPIC EDITOR FORM -->
-            <div style="background: #FEF3C7; padding: 15px; border-radius: 12px; border: 1px solid #FCD34D;">
-                <label id="formModeTitle" style="color: #92400E;">➕ Add New Topic / Edit Selected Topic:</label>
-                <input type="hidden" id="editingIndex" value="-1">
-                
-                <label>Topic Title:</label>
-                <input type="text" id="newTitle" placeholder="e.g. Domestic Animals">
-
-                <label>Questions (Separated by semicolon ';'):</label>
-                <input type="text" id="newQuestions" placeholder="e.g. What is this?; What color is it?" oninput="generateImageMappingUI()">
-
-                <label>Upload Image Files (Auto-compressed):</label>
-                <input type="file" id="newImageFiles" accept="image/*" multiple onchange="generateImageMappingUI()">
-
-                <div id="mappingContainer" style="margin: 10px 0; display: none;">
-                    <label style="color: #B45309;">🖼️ Map Images to Questions:</label>
-                    <div id="mappingList"></div>
-                </div>
-
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button class="btn" id="saveTopicBtn" style="flex: 2; background: #D97706;" onclick="saveCustomTopic()">➕ Save Topic</button>
-                    <button class="btn" id="cancelEditBtn" style="flex: 1; background: #6B7280; display: none;" onclick="resetForm()">Cancel</button>
-                </div>
-            </div>
-
-            <hr style="border: 1px dashed #FDE68A; margin: 15px 0;">
-
-            <div style="display: flex; gap: 10px; flex-direction: column;">
-                <button class="btn btn-success" style="width: 100%; font-size: 15px;" onclick="generateShareableLink()">🔗 Generate Shareable Link for Students</button>
-                <button class="btn" style="width: 100%; background: #4C1D95;" onclick="downloadTeacherEvaluationCSV()">📥 Download Evaluation Log (.csv)</button>
-            </div>
-        </div>
-    </details>
-
-    <!-- STUDENT AREA -->
-    <div class="section-box">
-        <label for="studentName">👤 Enter Student Name / ID:</label>
-        <input type="text" id="studentName" placeholder="e.g. Student 01">
-
-        <label for="topicSelect">📚 Select Practice Topic:</label>
-        <select id="topicSelect" onchange="changeTopic()"></select>
-    </div>
-
-    <!-- Interactive Station -->
-    <div class="flashcard-area">
-        <div class="feedback-overlay" id="feedbackOverlay">
-            <div class="feedback-emoji" id="feedbackEmoji">🦁</div>
-            <div class="feedback-text" id="feedbackText">Excellent! BRAVE 🦁</div>
+    <!-- PANEL TEACHER SETUP -->
+    <div id="teacherPanel">
+        <h1>⚙️ Teacher Setup Panel</h1>
+        
+        <div class="form-group">
+            <label for="targetLevelInput">1. Target Level Class:</label>
+            <input type="text" id="targetLevelInput" placeholder="e.g., Grade 1 - International Class">
         </div>
 
-        <div class="image-container" id="imageContainer">
-            <span class="emoji-fallback" id="cardEmoji">🐱</span>
+        <div class="form-group" style="display: flex; gap: 10px;">
+            <div style="flex: 1;">
+                <label for="startDateInput">2. Start Date:</label>
+                <input type="date" id="startDateInput">
+            </div>
+            <div style="flex: 1;">
+                <label for="dueDateInput">3. Due Date:</label>
+                <input type="date" id="dueDateInput">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="voiceSelect">4. Voice Accent:</label>
+            <select id="voiceSelect">
+                <option value="en-US">English (US)</option>
+                <option value="en-GB">English (UK)</option>
+            </select>
+        </div>
+
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ddd;">
+
+        <h2>📚 Add Topic / Vocabulary</h2>
+        <div class="form-group">
+            <label for="topicWord">English Word / Phrase:</label>
+            <input type="text" id="topicWord" placeholder="e.g., Dolphin">
+        </div>
+        <div class="form-group">
+            <label for="topicTranslation">Indonesian Translation:</label>
+            <input type="text" id="topicTranslation" placeholder="e.g., Lumba-lumba">
+        </div>
+        <div class="form-group">
+            <label for="topicImage">Image URL or Emoji (Recommended):</label>
+            <input type="text" id="topicImage" placeholder="e.g., 🐬 or https://example.com/dolphin.jpg">
         </div>
         
-        <h2 id="cardTitle" style="color: var(--ocean-dark); margin: 5px 0; font-size: 20px;">Cat</h2>
-        <p id="questionCounter" style="font-size: 12px; font-weight: bold; color: #577590; margin: 0;">Question 1</p>
-        <p id="aiQuestion" style="font-size: 16px; font-weight: bold; color: var(--ocean-blue); margin-top: 5px;">"What is your favorite animal?"</p>
+        <button type="button" onclick="addTopic()">➕ Save Topic</button>
 
-        <!-- Previous / Next Controls -->
-        <div class="nav-controls">
-            <button class="btn" id="prevBtn" style="flex: 1; background: #577590;" onclick="prevQuestion()" disabled>⬅️ Previous</button>
-            <button class="btn" id="nextBtn" style="flex: 1; background: #0077B6;" onclick="nextQuestion()">Next ➡️</button>
+        <h3 style="margin-top: 20px;">5. Created Topics List (<span id="topicCount">0</span>)</h3>
+        <div id="topicListDisplay">
+            <p style="color: #777; font-style: italic;">No topics added yet.</p>
         </div>
 
-        <!-- Tombol Mikrofon Utama -->
-        <button class="btn btn-mic" id="micBtn" onclick="startSpeakingSession()">🎙️ Start Speaking</button>
+        <hr style="margin: 25px 0; border: 0; border-top: 2px dashed #008cba;">
 
-        <!-- Fallback Manual Input (Jika Mikrofon Diblokir Browser) -->
-        <div id="fallbackInputArea" style="margin-top: 15px; display: none;">
-            <p style="font-size: 12px; color: #D93838; font-weight: bold; margin: 5px 0;">⚠️ Mikrofon tidak terdeteksi / diblokir browser. Gunakan input jawaban teks di bawah:</p>
-            <div style="display: flex; gap: 5px;">
-                <input type="text" id="manualAnswerInput" placeholder="Ketik jawaban di sini..." style="margin-bottom: 0;">
-                <button class="btn btn-success" onclick="submitManualAnswer()">Kirim</button>
-            </div>
-        </div>
+        <button type="button" class="btn-success" onclick="generateShareableLink()" style="padding: 15px; font-size: 16px;">
+            🔗 Generate Shareable Link for Students
+        </button>
     </div>
 
-    <!-- Full Leaderboard Table -->
-    <div class="section-box">
-        <label>🏆 STUDENT RANKINGS & RESULTS</label>
-        <div style="max-height: 200px; overflow-y: auto; border: 1px solid #E2E8F0; border-radius: 10px;">
-            <table class="leaderboard-table" id="leaderboardTable" style="margin-top: 0;">
-                <thead>
-                    <tr>
-                        <th>Rank</th>
-                        <th>Student Name</th>
-                        <th>Topic</th>
-                        <th>Questions</th>
-                        <th>Avg Time</th>
-                        <th>Evaluation</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Interaction Log -->
-    <div class="section-box">
-        <label>Interaction Log:</label>
-        <div class="chat-box" id="chatBox">
-            <div class="msg-ai">AI: Station Ready! Enter name and press Start Speaking.</div>
-        </div>
+    <!-- PANEL STUDENT VIEW (Otomatis Aktif jika Membuka Link Siswa) -->
+    <div id="studentPanel" class="hidden">
+        <h1 id="studentTitle">🌊 Ocean English Practice</h1>
+        <div id="studentMeta" style="background: #eef; padding: 10px; border-radius: 6px; margin-bottom: 20px;"></div>
+        
+        <h2>Practice Topics:</h2>
+        <div id="studentTopicContainer"></div>
     </div>
 </div>
 
 <script>
-    let recognition;
-    let isListening = false;
-    let currentResponse = "";
-    let synth = window.speechSynthesis;
-    let voices = [];
-    let selectedVoiceName = "";
-    let currentQuestionIndex = 0;
-    
-    let startTime = 0;
-    let responseTimeSeconds = 0;
-    let speechSupported = false;
-    
-    let studentRecordsMap = {};
-    let uploadedImageBase64List = [];
-    let isTeacherUnlocked = false;
+    // Global Array untuk menyimpan seluruh topik
+    let vocabList = [];
 
-    let vocabList = [
-        {
-            title: "Cat",
-            emoji: "🐱",
-            images: [],
-            imageMapping: [0, 0, 0],
-            questions: ["What animal is this?", "What color is the cat?", "Does a cat say meow?"]
-        },
-        {
-            title: "Dolphin",
-            emoji: "🐬",
-            images: [],
-            imageMapping: [0, 0, 0],
-            questions: ["Where does a dolphin live?", "Can a dolphin swim fast?", "Is a dolphin smart?"]
-        }
-    ];
+    // Fungsi Menambahkan Topik ke Array Global & Tampilan
+    function addTopic() {
+        const word = document.getElementById('topicWord').value.trim();
+        const translation = document.getElementById('topicTranslation').value.trim();
+        const image = document.getElementById('topicImage').value.trim() || '📖';
 
-    window.addEventListener('DOMContentLoaded', () => {
-        loadConfigFromURL();
-        initSpeechRecognition();
-    });
-
-    function initSpeechRecognition() {
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-            try {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                recognition = new SpeechRecognition();
-                recognition.lang = 'en-US';
-                recognition.continuous = false;
-
-                recognition.onresult = function(event) {
-                    const endTime = new Date().getTime();
-                    responseTimeSeconds = ((endTime - startTime) / 1000).toFixed(2);
-                    
-                    currentResponse = event.results[0][0].transcript;
-                    appendMessage("Student: " + currentResponse + ` (${responseTimeSeconds}s)`, "user");
-                    processAutomaticEvaluation();
-                };
-
-                recognition.onerror = function(e) {
-                    console.warn("Speech recognition error:", e);
-                    showFallbackUI();
-                };
-
-                recognition.onend = function() {
-                    isListening = false;
-                    const micBtn = document.getElementById('micBtn');
-                    if(micBtn) {
-                        micBtn.classList.remove('listening');
-                        micBtn.innerText = "🎙️ Start Speaking";
-                    }
-                };
-                speechSupported = true;
-            } catch(e) {
-                console.warn("Speech API failed init:", e);
-                showFallbackUI();
-            }
-        } else {
-            showFallbackUI();
-        }
-    }
-
-    function showFallbackUI() {
-        speechSupported = false;
-        document.getElementById('fallbackInputArea').style.display = 'block';
-    }
-
-    function verifyTeacherAccess(e) {
-        const pass = document.getElementById('teacherPasscode').value;
-        const panel = document.getElementById('teacherPanel');
-        
-        if (pass && !isTeacherUnlocked) {
-            e.preventDefault();
-            const inputPass = prompt("🔑 Masukkan Password Guru untuk membuka Panel Setup:");
-            if (inputPass === pass) {
-                isTeacherUnlocked = true;
-                panel.open = true;
-            } else {
-                alert("❌ Password salah! Akses ditolak.");
-                panel.open = false;
-            }
-        }
-    }
-
-    function updateLevel() {
-        const val = document.getElementById('targetLevelInput').value;
-        document.getElementById('displayLevel').innerText = "Target Level: " + val;
-    }
-
-    function checkScheduleStatus() {
-        const startVal = document.getElementById('startDateInput').value;
-        const dueVal = document.getElementById('dueDateInput').value;
-        const statusBadge = document.getElementById('sessionStatus');
-        const micBtn = document.getElementById('micBtn');
-
-        const now = new Date();
-
-        if (startVal && now < new Date(startVal)) {
-            statusBadge.innerText = "Session Not Started Yet";
-            statusBadge.className = "status-badge status-closed";
-            micBtn.disabled = true;
-            return false;
+        if (!word) {
+            alert("Harap isi English Word terlebih dahulu!");
+            return;
         }
 
-        if (dueVal && now > new Date(dueVal)) {
-            statusBadge.innerText = "Session Closed (Due Date Passed)";
-            statusBadge.className = "status-badge status-closed";
-            micBtn.disabled = true;
-            return false;
-        }
+        // Tambah ke array
+        const topicObj = { id: Date.now(), word, translation, image };
+        vocabList.push(topicObj);
 
-        statusBadge.innerText = "Session Active";
-        statusBadge.className = "status-badge status-active";
-        micBtn.disabled = false;
-        return true;
-    }
-
-    function populateVoiceList() {
-        if (typeof synth === 'undefined') return;
-        voices = synth.getVoices().filter(v => v.lang.includes('en'));
-        const voiceSelect = document.getElementById('voiceSelect');
-        if (!voiceSelect) return;
-        voiceSelect.innerHTML = '';
-
-        voices.forEach((voice) => {
-            const option = document.createElement('option');
-            const isNatural = voice.name.includes('Natural') || voice.name.includes('Google') ? '✨ Natural' : '';
-            option.textContent = `${voice.name} (${voice.lang}) ${isNatural}`;
-            option.value = voice.name;
-            voiceSelect.appendChild(option);
-        });
-
-        if (voices.length > 0) {
-            if (!selectedVoiceName) {
-                selectedVoiceName = voices[0].name;
-            }
-            voiceSelect.value = selectedVoiceName;
-        }
-    }
-
-    function lockSelectedVoice() {
-        const voiceSelect = document.getElementById('voiceSelect');
-        if (voiceSelect && voiceSelect.value) {
-            selectedVoiceName = voiceSelect.value;
-        }
-    }
-
-    populateVoiceList();
-    if (typeof synth !== 'undefined' && synth.onvoiceschanged !== undefined) {
-        synth.onvoiceschanged = populateVoiceList;
-    }
-
-    function renderVocabDropdown() {
-        const topicSelect = document.getElementById('topicSelect');
-        if(!topicSelect) return;
-        topicSelect.innerHTML = '';
-        vocabList.forEach((item, index) => {
-            const option = document.createElement('option');
-            option.value = index;
-            option.textContent = `${item.title} ${item.emoji || '📷'}`;
-            topicSelect.appendChild(option);
-        });
+        // Reset form input
+        document.getElementById('topicWord').value = '';
+        document.getElementById('topicTranslation').value = '';
+        document.getElementById('topicImage').value = '';
 
         renderTeacherTopicList();
-        changeTopic();
     }
 
+    // Fungsi Render Daftar Topik di Panel Guru
     function renderTeacherTopicList() {
-        const container = document.getElementById('teacherTopicList');
-        if (!container) return;
-        container.innerHTML = '';
+        const container = document.getElementById('topicListDisplay');
+        document.getElementById('topicCount').innerText = vocabList.length;
 
-        vocabList.forEach((item, idx) => {
-            const div = document.createElement('div');
-            div.className = 'topic-list-item';
-            div.innerHTML = `
-                <div>
-                    <b>${idx + 1}. ${item.title}</b> (${item.questions.length} Qs)
+        if (vocabList.length === 0) {
+            container.innerHTML = `<p style="color: #777; font-style: italic;">No topics added yet.</p>`;
+            return;
+        }
+
+        container.innerHTML = vocabList.map((item, index) => `
+            <div class="topic-card">
+                <div style="display: flex; align-items: center;">
+                    <span style="font-size: 24px; margin-right: 12px;">${item.image.startsWith('http') ? `<img src="${item.image}" alt="img">` : item.image}</span>
+                    <div>
+                        <strong>${index + 1}. ${item.word}</strong><br>
+                        <small style="color: #555;">${item.translation}</small>
+                    </div>
                 </div>
-                <div>
-                    <button class="btn" style="padding: 4px 8px; font-size: 11px; background: #D97706;" onclick="editTopic(${idx})">✏️ Edit</button>
-                    <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="deleteTopic(${idx})">🗑️ Delete</button>
-                </div>
-            `;
-            container.appendChild(div);
-        });
+                <button onclick="removeTopic(${item.id})" style="width: auto; background: #d9534f; padding: 5px 10px; margin: 0;">Hapus</button>
+            </div>
+        `).join('');
     }
 
-    function changeTopic() {
-        currentQuestionIndex = 0;
-        updateQuestionDisplay();
+    // Hapus Topik
+    function removeTopic(id) {
+        vocabList = vocabList.filter(t => t.id !== id);
+        renderTeacherTopicList();
     }
 
-    function updateQuestionDisplay() {
-        const selectedIndex = document.getElementById('topicSelect').value;
-        const item = vocabList[selectedIndex];
-        
-        if (item && item.questions.length > 0) {
-            document.getElementById('cardTitle').innerText = item.title;
-            document.getElementById('questionCounter').innerText = `Question ${currentQuestionIndex + 1} of ${item.questions.length}`;
-            const qText = item.questions[currentQuestionIndex];
-            document.getElementById('aiQuestion').innerText = `"${qText}"`;
-            
-            const container = document.getElementById('imageContainer');
-            let imgIdx = (item.imageMapping && item.imageMapping[currentQuestionIndex] !== undefined) 
-                           ? item.imageMapping[currentQuestionIndex] 
-                           : currentQuestionIndex;
-            
-            const currentImg = (item.images && item.images[imgIdx]) ? item.images[imgIdx] : null;
-
-            if (currentImg) {
-                container.innerHTML = `<img src="${currentImg}" alt="Question Image">`;
-            } else {
-                container.innerHTML = `<span class="emoji-fallback">${item.emoji || '📷'}</span>`;
-            }
-
-            document.getElementById('prevBtn').disabled = (currentQuestionIndex === 0);
-            document.getElementById('nextBtn').disabled = (currentQuestionIndex === item.questions.length - 1);
-        }
-    }
-
-    function nextQuestion() {
-        const selectedIndex = document.getElementById('topicSelect').value;
-        const item = vocabList[selectedIndex];
-        if (item && currentQuestionIndex < item.questions.length - 1) {
-            currentQuestionIndex++;
-            updateQuestionDisplay();
-        }
-    }
-
-    function prevQuestion() {
-        if (currentQuestionIndex > 0) {
-            currentQuestionIndex--;
-            updateQuestionDisplay();
-        }
-    }
-
-    function startSpeakingSession() {
-        if (!checkScheduleStatus()) {
-            alert("This session is currently inactive or closed!");
-            return;
-        }
-
-        const studentName = document.getElementById('studentName').value;
-        if (!studentName) {
-            alert("Please enter your name first!");
-            return;
-        }
-
-        lockSelectedVoice();
-        const qText = document.getElementById('aiQuestion').innerText.replace(/^"|"$/g, '');
-        
-        appendMessage("AI Question: " + qText, "ai");
-
-        const micBtn = document.getElementById('micBtn');
-        micBtn.classList.add('listening');
-        micBtn.innerText = "🔊 Reading Question...";
-
-        speakText(qText, () => {
-            micBtn.innerText = "🎙️ Listening... (Speak Now)";
-            startTime = new Date().getTime();
-
-            if (speechSupported && recognition) {
-                try {
-                    recognition.start();
-                    isListening = true;
-                } catch(e) {
-                    console.error("Mic start error:", e);
-                    showFallbackUI();
-                }
-            } else {
-                showFallbackUI();
-            }
-        });
-    }
-
-    function submitManualAnswer() {
-        const input = document.getElementById('manualAnswerInput');
-        if (!input.value.trim()) return;
-
-        const endTime = new Date().getTime();
-        responseTimeSeconds = startTime > 0 ? ((endTime - startTime) / 1000).toFixed(2) : 2.5;
-
-        currentResponse = input.value.trim();
-        appendMessage("Student: " + currentResponse, "user");
-        input.value = '';
-        
-        processAutomaticEvaluation();
-    }
-
-    function compressImageFile(file, maxWidth = 300, maxHeight = 300, quality = 0.6) {
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = (event) => {
-                const img = new Image();
-                img.src = event.target.result;
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > height) {
-                        if (width > maxWidth) {
-                            height = Math.round((height * maxWidth) / width);
-                            width = maxWidth;
-                        }
-                    } else {
-                        if (height > maxHeight) {
-                            width = Math.round((width * maxHeight) / height);
-                            height = maxHeight;
-                        }
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    resolve(canvas.toDataURL('image/jpeg', quality));
-                };
-            };
-        });
-    }
-
-    function generateImageMappingUI() {
-        const files = document.getElementById('newImageFiles').files;
-        const questionsInput = document.getElementById('newQuestions').value;
-        const container = document.getElementById('mappingContainer');
-        
-        const questions = questionsInput.split(';').map(q => q.trim()).filter(q => q.length > 0);
-        if (questions.length === 0) {
-            container.style.display = 'none';
-            return;
-        }
-
-        if (files.length > 0) {
-            const filePromises = Array.from(files).map(file => compressImageFile(file));
-            Promise.all(filePromises).then(base64Images => {
-                uploadedImageBase64List = base64Images;
-                renderMappingOptions(questions, base64Images);
-            });
-        } else if (uploadedImageBase64List.length > 0) {
-            renderMappingOptions(questions, uploadedImageBase64List);
-        } else {
-            container.style.display = 'none';
-        }
-    }
-
-    function renderMappingOptions(questions, images) {
-        const container = document.getElementById('mappingContainer');
-        const list = document.getElementById('mappingList');
-        list.innerHTML = '';
-
-        questions.forEach((q, qIdx) => {
-            const row = document.createElement('div');
-            row.style.margin = "5px 0";
-            
-            let optionsHtml = images.map((_, imgIdx) => `<option value="${imgIdx}">Use Image ${imgIdx + 1}</option>`).join('');
-            
-            row.innerHTML = `
-                <span style="font-size:12px;">Q${qIdx + 1} ("${q}"):</span>
-                <select class="img-map-select" style="padding: 4px; font-size:12px; width: 130px; margin-bottom: 0;">
-                    ${optionsHtml}
-                </select>
-            `;
-            list.appendChild(row);
-        });
-
-        container.style.display = 'block';
-    }
-
-    function editTopic(index) {
-        const item = vocabList[index];
-        document.getElementById('editingIndex').value = index;
-        document.getElementById('formModeTitle').innerText = `✏️ Editing Topic: ${item.title}`;
-        document.getElementById('newTitle').value = item.title;
-        document.getElementById('newQuestions').value = item.questions.join('; ');
-        document.getElementById('saveTopicBtn').innerText = "💾 Update Topic";
-        document.getElementById('saveTopicBtn').style.background = "#059669";
-        document.getElementById('cancelEditBtn').style.display = "block";
-        
-        uploadedImageBase64List = item.images || [];
-        generateImageMappingUI();
-    }
-
-    function resetForm() {
-        document.getElementById('editingIndex').value = "-1";
-        document.getElementById('formModeTitle').innerText = "➕ Add New Topic / Edit Selected Topic:";
-        document.getElementById('newTitle').value = '';
-        document.getElementById('newQuestions').value = '';
-        document.getElementById('newImageFiles').value = '';
-        document.getElementById('saveTopicBtn').innerText = "➕ Save Topic";
-        document.getElementById('saveTopicBtn').style.background = "#D97706";
-        document.getElementById('cancelEditBtn').style.display = "none";
-        document.getElementById('mappingContainer').style.display = "none";
-        uploadedImageBase64List = [];
-    }
-
-    function saveCustomTopic() {
-        const editIdx = parseInt(document.getElementById('editingIndex').value);
-        const title = document.getElementById('newTitle').value;
-        const questionsInput = document.getElementById('newQuestions').value;
-
-        if (!title || !questionsInput) {
-            alert("Please fill in Title and Questions!");
-            return;
-        }
-
-        const questions = questionsInput.split(';').map(q => q.trim()).filter(q => q.length > 0);
-        
-        const mapSelects = document.querySelectorAll('.img-map-select');
-        let imageMapping = [];
-        if (mapSelects.length > 0) {
-            mapSelects.forEach(sel => imageMapping.push(parseInt(sel.value)));
-        } else {
-            imageMapping = questions.map(() => 0);
-        }
-
-        const topicObj = {
-            title: title,
-            emoji: '⭐',
-            images: uploadedImageBase64List,
-            imageMapping: imageMapping,
-            questions: questions
-        };
-
-        if (editIdx >= 0) {
-            vocabList[editIdx] = topicObj;
-            alert("Topic updated successfully!");
-        } else {
-            vocabList.push(topicObj);
-            alert("New Topic added successfully!");
-        }
-
-        resetForm();
-        renderVocabDropdown();
-    }
-
-    function deleteTopic(index) {
-        if (vocabList.length <= 1) {
-            alert("At least one topic must remain in the list.");
-            return;
-        }
-
-        vocabList.splice(index, 1);
-        resetForm();
-        renderVocabDropdown();
-    }
-
+    // FUNGSI UTAMA: GENERATE LINK SISWA LENGKAP
     function generateShareableLink() {
+        if (vocabList.length === 0) {
+            alert("⚠️ Harap tambahkan minimal 1 topik sebelum membuat link!");
+            return;
+        }
+
+        // Ambil semua data Teacher Setup
         const config = {
-            level: document.getElementById('targetLevelInput').value,
-            start: document.getElementById('startDateInput').value,
-            due: document.getElementById('dueDateInput').value,
-            voiceName: selectedVoiceName,
-            topics: vocabList
+            level: document.getElementById('targetLevelInput').value || 'General Class',
+            start: document.getElementById('startDateInput').value || '-',
+            due: document.getElementById('dueDateInput').value || '-',
+            voice: document.getElementById('voiceSelect').value,
+            topics: vocabList // Menjamin seluruh topik terikut
         };
 
         try {
+            // Ubah Objek ke JSON lalu Kompresi dengan LZString agar URL muat banyak data
             const jsonString = JSON.stringify(config);
             const compressedData = LZString.compressToEncodedURIComponent(jsonString);
+            
+            // Buat URL bersih tanpa query sebelumnya
             const baseUrl = window.location.href.split('?')[0];
-            const shareUrl = `${baseUrl}?data=${compressedData}&mode=student`;
+            const studentUrl = `${baseUrl}?data=${compressedData}&mode=student`;
 
+            // Salin Otomatis ke Clipboard
             if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(shareUrl).then(() => {
-                    alert("✅ Link khusus SISWA berhasil disalin!");
+                navigator.clipboard.writeText(studentUrl).then(() => {
+                    alert("✅ Success! Link siswa berhasil disalin ke clipboard.\n\nSemua topik dan settingan telah tersimpan di dalam link.");
                 }).catch(() => {
-                    prompt("Salin link khusus siswa di bawah ini:", shareUrl);
+                    promptManualCopy(studentUrl);
                 });
             } else {
-                prompt("Salin link khusus siswa di bawah ini:", shareUrl);
+                promptManualCopy(studentUrl);
             }
-        } catch(err) {
-            console.error("Error generating link:", err);
-            alert("Terjadi kesalahan. Coba kurangi jumlah gambar.");
+        } catch (err) {
+            console.error("Gagal meng-generate link:", err);
+            alert("❌ Terjadi kesalahan saat memproses link. Pastikan tidak ada karakter terlarang.");
         }
     }
 
-    function loadConfigFromURL() {
+    function promptManualCopy(url) {
+        prompt("✅ Link Siswa Berhasil Dibuat!\nSalin link di bawah ini dan bagikan ke siswa:", url);
+    }
+
+    // FUNGSI LOAD DATA PADA SISI SISWA (Dijalankan Otomatis Saat Halaman Dimuat)
+    window.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
-        const dataParam = urlParams.get('data');
-        const modeParam = urlParams.get('mode');
+        const compressedData = urlParams.get('data');
+        const mode = urlParams.get('mode');
 
-        if (modeParam === 'student') {
-            const teacherPanel = document.getElementById('teacherPanel');
-            if (teacherPanel) {
-                teacherPanel.remove();
-            }
-        }
-
-        if (dataParam) {
+        // Jika terdapat parameter 'data' dan 'mode=student', tampilkan mode siswa
+        if (compressedData && mode === 'student') {
             try {
-                let jsonString = LZString.decompressFromEncodedURIComponent(dataParam);
-                if (!jsonString) {
-                    jsonString = decodeURIComponent(escape(window.atob(dataParam)));
-                }
+                // Dekompresi data URL
+                const decompressedJson = LZString.decompressFromEncodedURIComponent(compressedData);
+                if (!decompressedJson) throw new Error("Data korup");
 
-                const config = JSON.parse(jsonString);
+                const config = JSON.parse(decompressedJson);
 
-                if (config.level) {
-                    document.getElementById('targetLevelInput').value = config.level;
-                    updateLevel();
-                }
-                if (config.start) document.getElementById('startDateInput').value = config.start;
-                if (config.due) document.getElementById('dueDateInput').value = config.due;
-                if (config.voiceName) selectedVoiceName = config.voiceName;
+                // Sembunyikan Panel Guru, Tampilkan Panel Siswa
+                document.getElementById('teacherPanel').classList.add('hidden');
+                document.getElementById('studentPanel').classList.remove('hidden');
+
+                // Tampilkan Informasi Kelas
+                document.getElementById('studentMeta').innerHTML = `
+                    <strong>Class Level:</strong> ${config.level} | 
+                    <strong>Start:</strong> ${config.start} | 
+                    <strong>Due:</strong> ${config.due}
+                `;
+
+                // Render Topik untuk Siswa
+                const studentTopicContainer = document.getElementById('studentTopicContainer');
                 if (config.topics && config.topics.length > 0) {
-                    vocabList = config.topics;
+                    studentTopicContainer.innerHTML = config.topics.map((item, idx) => `
+                        <div class="topic-card">
+                            <div style="display: flex; align-items: center;">
+                                <span style="font-size: 28px; margin-right: 15px;">
+                                    ${item.image.startsWith('http') ? `<img src="${item.image}" alt="img">` : item.image}
+                                </span>
+                                <div>
+                                    <h3 style="margin: 0; color: #006699;">${idx + 1}. ${item.word}</h3>
+                                    <p style="margin: 3px 0 0 0; color: #666;">${item.translation}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    studentTopicContainer.innerHTML = `<p>Tidak ada topik dalam tugas ini.</p>`;
                 }
 
-                checkScheduleStatus();
-                renderVocabDropdown();
-            } catch(e) {
-                console.error("Error decoding link config:", e);
-                renderVocabDropdown();
+            </div> catch (e) {
+                console.error("Gagal membaca data link siswa:", e);
+                alert("❌ Link tidak valid atau data topik telah rusak.");
             }
-        } else {
-            renderVocabDropdown();
         }
-    }
-
-    function downloadTeacherEvaluationCSV() {
-        const studentKeys = Object.keys(studentRecordsMap);
-        if (studentKeys.length === 0) {
-            alert("No student data available to download yet!");
-            return;
-        }
-
-        let csvContent = "data:text/csv;charset=utf-8,";
-        csvContent += "Student Name,Topic,Total Questions,Avg Response Time (s),Overall Evaluation\n";
-
-        studentKeys.forEach(studentName => {
-            const data = studentRecordsMap[studentName];
-            const avgTime = (data.times.reduce((a, b) => a + b, 0) / data.times.length).toFixed(2);
-            const safeName = `"${studentName.replace(/"/g, '""')}"`;
-            const safeTopic = `"${data.topic.replace(/"/g, '""')}"`;
-            const safeEval = `"${data.evals[data.evals.length - 1].replace(/"/g, '""')}"`;
-
-            csvContent += `${safeName},${safeTopic},${data.times.length},${avgTime},${safeEval}\n`;
-        });
-
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `Student_Evaluation_Log_${new Date().toISOString().slice(0,10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-
-    function processAutomaticEvaluation() {
-        let fluencyGrade = "";
-        let braveryGrade = "";
-        let audioMessage = "";
-
-        const wordCount = currentResponse.trim().split(/\s+/).length;
-        const time = parseFloat(responseTimeSeconds);
-
-        if (time < 3.5 && wordCount >= 2) {
-            fluencyGrade = "Excellent 🌟";
-            audioMessage = "Excellent job!";
-        } else if (time <= 6.0) {
-            fluencyGrade = "Very Good 👏";
-            audioMessage = "Very good effort!";
-        } else {
-            fluencyGrade = "Good 👍";
-            audioMessage = "Good response!";
-        }
-
-        if (wordCount >= 1 && time <= 8.0) {
-            braveryGrade = "Brave 🦁";
-        } else {
-            braveryGrade = "Keep Trying 🐣";
-        }
-
-        executeFeedbackAndRecord(braveryGrade, fluencyGrade, audioMessage);
-    }
-
-    function executeFeedbackAndRecord(bravery, fluency, audioMsg) {
-        const name = document.getElementById('studentName').value;
-        const topic = document.getElementById('cardTitle').innerText;
-        const visualEmoji = bravery.includes('Brave') ? '🦁🎉' : '🐣🌱';
-
-        if (!studentRecordsMap[name]) {
-            studentRecordsMap[name] = {
-                topic: topic,
-                times: [],
-                answers: [],
-                evals: []
-            };
-        }
-
-        studentRecordsMap[name].times.push(parseFloat(responseTimeSeconds));
-        studentRecordsMap[name].answers.push(currentResponse);
-        studentRecordsMap[name].evals.push(`${bravery} | ${fluency}`);
-
-        const selectedIndex = document.getElementById('topicSelect').value;
-        const totalQuestions = vocabList[selectedIndex].questions.length;
-
-        showVisualFeedback(visualEmoji, `${bravery}\n${fluency}`);
-
-        if (currentQuestionIndex >= totalQuestions - 1) {
-            const finalSpeech = "Awesome! You completed all questions.";
-            setTimeout(() => {
-                showVisualFeedback("🏆🌟", "Session Complete!\n" + finalSpeech);
-                speakText(finalSpeech);
-            }, 2000);
-        }
-
-        updateLeaderboardUI();
-    }
-
-    function showVisualFeedback(emoji, text) {
-        const overlay = document.getElementById('feedbackOverlay');
-        document.getElementById('feedbackEmoji').innerText = emoji;
-        document.getElementById('feedbackText').innerText = text;
-        overlay.style.display = 'flex';
-        
-        setTimeout(() => { overlay.style.display = 'none'; }, 2000);
-    }
-
-    function updateLeaderboardUI() {
-        const tbody = document.getElementById('leaderboardTable').querySelector('tbody');
-        tbody.innerHTML = '';
-
-        let leaderboardList = Object.keys(studentRecordsMap).map(studentName => {
-            const rec = studentRecordsMap[studentName];
-            const totalQ = rec.times.length;
-            const avgTime = totalQ > 0 ? (rec.times.reduce((a, b) => a + b, 0) / totalQ).toFixed(2) : 0;
-            const lastEval = rec.evals[rec.evals.length - 1] || '-';
-            
-            return {
-                name: studentName,
-                topic: rec.topic,
-                totalQ: totalQ,
-                avgTime: parseFloat(avgTime),
-                overallEval: lastEval
-            };
-        });
-
-        leaderboardList.sort((a, b) => a.avgTime - b.avgTime);
-
-        leaderboardList.forEach((item, index) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td><b>#${index + 1}</b></td>
-                <td><b>${item.name}</b></td>
-                <td>${item.topic}</td>
-                <td><b>${item.totalQ} Qs</b></td>
-                <td style="color: var(--ocean-blue); font-weight: bold;">${item.avgTime}s</td>
-                <td><b>${item.overallEval}</b></td>
-            `;
-            tbody.appendChild(row);
-        });
-    }
-
-    function appendMessage(text, type) {
-        const chatBox = document.getElementById('chatBox');
-        const div = document.createElement('div');
-        div.className = type === 'ai' ? 'msg-ai' : 'msg-user';
-        div.innerText = text;
-        chatBox.appendChild(div);
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    function speakText(text, callback) {
-        if ('speechSynthesis' in window) {
-            synth.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            
-            if (voices.length === 0) {
-                voices = synth.getVoices().filter(v => v.lang.includes('en'));
-            }
-
-            const targetVoice = voices.find(v => v.name === selectedVoiceName) || voices[0];
-            if (targetVoice) {
-                utterance.voice = targetVoice;
-            }
-
-            utterance.rate = 0.8;
-            utterance.pitch = 1.0;
-            
-            utterance.onend = function() {
-                if (callback) callback();
-            };
-
-            synth.speak(utterance);
-        } else if (callback) {
-            callback();
-        }
-    }
+    });
 </script>
 
 </body>
