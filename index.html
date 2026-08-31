@@ -1,262 +1,559 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ocean English Application</title>
-    <!-- Library LZString untuk kompresi data URL -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f8ff; margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h1, h2 { color: #006699; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; color: #333; }
-        input, select, button { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
-        button { background-color: #008cba; color: white; font-weight: bold; border: none; cursor: pointer; margin-top: 10px; }
-        button:hover { background-color: #005f73; }
-        .btn-success { background-color: #2e7d32; }
-        .btn-success:hover { background-color: #1b5e20; }
-        .topic-card { background: #eef9ff; border-left: 5px solid #008cba; padding: 10px 15px; margin-bottom: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
-        .topic-card img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; margin-right: 10px; }
-        .badge { background: #008cba; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px; }
-        .hidden { display: none; }
-        .output-box { margin-top: 15px; padding: 10px; background: #fff3cd; border: 1px solid #ffeeba; border-radius: 6px; word-break: break-all; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Ocean English Station</title>
+  <style>
+    :root {
+      --primary-color: #0077b6;
+      --secondary-color: #00b4d8;
+      --accent-color: #caf0f8;
+      --text-color: #1d3557;
+      --bg-color: #f0f8ff;
+      --card-bg: #ffffff;
+      --success-color: #2a9d8f;
+      --warning-color: #e76f51;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      color: var(--primary-color);
+      margin-bottom: 5px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e0e0e0;
+    }
+
+    .card h2 {
+      margin-top: 0;
+      color: var(--primary-color);
+      border-bottom: 2px solid var(--accent-color);
+      padding-bottom: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    select, input[type="date"], input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+
+    .btn {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      width: 100%;
+      transition: background-color 0.2s;
+    }
+
+    .btn:hover {
+      background-color: #005f9e;
+    }
+
+    .btn-success {
+      background-color: var(--success-color);
+    }
+
+    .btn-success:hover {
+      background-color: #218378;
+    }
+
+    .btn-mic {
+      background-color: #e63946;
+      border-radius: 50px;
+      padding: 14px 28px;
+      width: auto;
+      margin: 15px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-mic:hover {
+      background-color: #c1121f;
+    }
+
+    .btn-mic.recording {
+      animation: pulse 1.2s infinite;
+      background-color: #ff4d4d;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    .badge-student {
+      display: inline-block;
+      background-color: var(--warning-color);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Score & Reward Components */
+    .score-card {
+      background: #f8f9fa;
+      border: 2px dashed var(--secondary-color);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .stars-display {
+      font-size: 32px;
+      letter-spacing: 4px;
+      margin: 8px 0;
+    }
+
+    .badge-reward {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+      color: #fff;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    .badge-gold { background: linear-gradient(135deg, #f1c40f, #f39c12); }
+    .badge-silver { background: linear-gradient(135deg, #bdc3c7, #95a5a6); }
+    .badge-bronze { background: linear-gradient(135deg, #e67e22, #d35400); }
+    .badge-try { background: linear-gradient(135deg, #3498db, #2980b9); }
+
+    .score-meter {
+      height: 12px;
+      background: #e0e0e0;
+      border-radius: 6px;
+      overflow: hidden;
+      margin: 12px 0;
+    }
+
+    .score-fill {
+      height: 100%;
+      background: var(--success-color);
+      width: 0%;
+      transition: width 0.6s ease-in-out;
+    }
+
+    .sync-status {
+      font-size: 12px;
+      margin-top: 8px;
+      color: #666;
+    }
+  </style>
 </head>
 <body>
 
-<div class="container">
+  <div class="container">
+    <header>
+      <h1>🌊 AI Ocean English Station 🐬</h1>
+      <p>Interactive English Speaking & Listening Practice</p>
+    </header>
+
     <!-- PANEL TEACHER SETUP -->
-    <div id="teacherPanel">
-        <h1>⚙️ Teacher Setup Panel</h1>
-        
-        <div class="form-group">
-            <label for="targetLevelInput">1. Target Level Class:</label>
-            <input type="text" id="targetLevelInput" placeholder="e.g., Grade 1 - International Class">
-        </div>
+    <div id="teacherSetupPanel" class="card">
+      <h2>⚙️ Teacher Setup & Topic Management</h2>
+      <p style="font-size: 14px; color: #666;">Atur materi pembelajaran di bawah ini lalu klik tombol untuk membuat link khusus siswa.</p>
+      
+      <div class="form-group">
+        <label for="levelSelect">Select Target Level / Grade:</label>
+        <select id="levelSelect">
+          <option value="Grade 1">Grade 1 - Basic Vocabulary</option>
+          <option value="Grade 2" selected>Grade 2 - Elementary Communication</option>
+          <option value="Grade 3">Grade 3 - Intermediate Phrases</option>
+        </select>
+      </div>
 
-        <div class="form-group" style="display: flex; gap: 10px;">
-            <div style="flex: 1;">
-                <label for="startDateInput">2. Start Date:</label>
-                <input type="date" id="startDateInput">
-            </div>
-            <div style="flex: 1;">
-                <label for="dueDateInput">3. Due Date:</label>
-                <input type="date" id="dueDateInput">
-            </div>
-        </div>
+      <div class="form-group">
+        <label for="topicSelect">Select Learning Topic:</label>
+        <select id="topicSelect">
+          <option value="Ocean Animals">Ocean Animals & Marine Life</option>
+          <option value="Daily Routines">Daily Routines & Hobbies</option>
+          <option value="My School & Classroom">My School & Classroom</option>
+          <option value="Family & Friends">Family & Friends</option>
+        </select>
+      </div>
 
-        <div class="form-group">
-            <label for="voiceSelect">4. Voice Accent:</label>
-            <select id="voiceSelect">
-                <option value="en-US">English (US)</option>
-                <option value="en-GB">English (UK)</option>
-            </select>
-        </div>
+      <div class="form-group">
+        <label for="voiceSelect">AI Voice Preference:</label>
+        <select id="voiceSelect">
+          <option value="en-US-Female">English (US) - Female</option>
+          <option value="en-US-Male">English (US) - Male</option>
+          <option value="en-UK-Female">English (UK) - Female</option>
+        </select>
+      </div>
 
-        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ddd;">
-
-        <h2>📚 Add Topic / Vocabulary</h2>
-        <div class="form-group">
-            <label for="topicWord">English Word / Phrase:</label>
-            <input type="text" id="topicWord" placeholder="e.g., Dolphin">
+      <div style="display: flex; gap: 10px;">
+        <div class="form-group" style="flex: 1;">
+          <label for="startDate">Start Date:</label>
+          <input type="date" id="startDate" />
         </div>
-        <div class="form-group">
-            <label for="topicTranslation">Indonesian Translation:</label>
-            <input type="text" id="topicTranslation" placeholder="e.g., Lumba-lumba">
+        <div class="form-group" style="flex: 1;">
+          <label for="endDate">End Date:</label>
+          <input type="date" id="endDate" />
         </div>
-        <div class="form-group">
-            <label for="topicImage">Image URL or Emoji (Recommended):</label>
-            <input type="text" id="topicImage" placeholder="e.g., 🐬 or https://example.com/dolphin.jpg">
-        </div>
-        
-        <button type="button" onclick="addTopic()">➕ Save Topic</button>
+      </div>
 
-        <h3 style="margin-top: 20px;">5. Created Topics List (<span id="topicCount">0</span>)</h3>
-        <div id="topicListDisplay">
-            <p style="color: #777; font-style: italic;">No topics added yet.</p>
-        </div>
-
-        <hr style="margin: 25px 0; border: 0; border-top: 2px dashed #008cba;">
-
-        <button type="button" class="btn-success" onclick="generateShareableLink()" style="padding: 15px; font-size: 16px;">
-            🔗 Generate Shareable Link for Students
-        </button>
-
-        <!-- Container untuk menampilkan link secara langsung jika clipboard gagal -->
-        <div id="linkResultBox" class="output-box hidden">
-            <strong>Link Siswa Berhasil Dibuat!</strong>
-            <p style="font-size: 12px; margin: 5px 0; color: #856404;">Salin link di bawah ini dan bagikan ke siswa:</p>
-            <input type="text" id="generatedLinkInput" readonly onclick="this.select()">
-        </div>
+      <button type="button" class="btn btn-success" onclick="generateShareableLink()">
+        🔗 Generate Shareable Link for Students
+      </button>
     </div>
 
-    <!-- PANEL STUDENT VIEW -->
-    <div id="studentPanel" class="hidden">
-        <h1 id="studentTitle">🌊 Ocean English Practice</h1>
-        <div id="studentMeta" style="background: #eef; padding: 10px; border-radius: 6px; margin-bottom: 20px;"></div>
-        
-        <h2>Practice Topics:</h2>
-        <div id="studentTopicContainer"></div>
+    <!-- PANEL STUDENT STATION -->
+    <div id="studentStationPanel" class="card">
+      <div id="studentBadge" class="badge-student hidden">Mode Siswa (Terkunci)</div>
+      <h2>🎙️ Student Practice Station</h2>
+      
+      <div id="activeTopicInfo" style="background: var(--accent-color); padding: 12px; border-radius: 8px; margin-bottom: 20px;">
+        <strong>Active Topic:</strong> <span id="displayTopic">Loading topic...</span><br>
+        <strong>Target Level:</strong> <span id="displayLevel">Loading level...</span>
+      </div>
+
+      <div class="form-group">
+        <label for="studentName">Enter Your Full Name:</label>
+        <input type="text" id="studentName" placeholder="e.g. Sarah Az-Zahra" />
+      </div>
+
+      <button type="button" class="btn" id="startBtn" onclick="startPractice()">
+        🚀 Start Speaking Practice
+      </button>
+
+      <!-- Area Interaksi Soal/AI -->
+      <div id="practiceArea" style="margin-top: 20px; text-align: center;">
+        <p id="aiPromptText" style="font-size: 18px; font-weight: 500;">Click 'Start Speaking Practice' when ready!</p>
+      </div>
     </div>
-</div>
+  </div>
 
-<script>
-    let vocabList = [];
+  <script>
+    // URL Google Apps Script Anda (Jika ada)
+    const GOOGLE_SHEET_WEB_APP_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE";
 
-    function addTopic() {
-        const word = document.getElementById('topicWord').value.trim();
-        const translation = document.getElementById('topicTranslation').value.trim();
-        const image = document.getElementById('topicImage').value.trim() || '📖';
+    let activeConfig = {
+      level: 'Grade 2',
+      topic: 'Ocean Animals',
+      voice: 'en-US-Female',
+      startDate: '',
+      endDate: ''
+    };
 
-        if (!word) {
-            alert("Harap isi English Word terlebih dahulu!");
-            return;
-        }
+    const targetPrompts = {
+      'Ocean Animals': "I see a blue dolphin swimming in the ocean.",
+      'Daily Routines': "I wash my hands and eat breakfast every morning.",
+      'My School & Classroom': "There are many colorful books on my desk.",
+      'Family & Friends': "I love playing soccer with my best friends."
+    };
 
-        const topicObj = { id: Date.now(), word, translation, image };
-        vocabList.push(topicObj);
+    let recognition;
+    let isRecording = false;
 
-        document.getElementById('topicWord').value = '';
-        document.getElementById('topicTranslation').value = '';
-        document.getElementById('topicImage').value = '';
-
-        renderTeacherTopicList();
-    }
-
-    function renderTeacherTopicList() {
-        const container = document.getElementById('topicListDisplay');
-        document.getElementById('topicCount').innerText = vocabList.length;
-
-        if (vocabList.length === 0) {
-            container.innerHTML = `<p style="color: #777; font-style: italic;">No topics added yet.</p>`;
-            return;
-        }
-
-        container.innerHTML = vocabList.map((item, index) => `
-            <div class="topic-card">
-                <div style="display: flex; align-items: center;">
-                    <span style="font-size: 24px; margin-right: 12px;">${item.image.startsWith('http') ? `<img src="${item.image}" alt="img">` : item.image}</span>
-                    <div>
-                        <strong>${index + 1}. ${item.word}</strong><br>
-                        <small style="color: #555;">${item.translation}</small>
-                    </div>
-                </div>
-                <button onclick="removeTopic(${item.id})" style="width: auto; background: #d9534f; padding: 5px 10px; margin: 0;">Hapus</button>
-            </div>
-        `).join('');
-    }
-
-    function removeTopic(id) {
-        vocabList = vocabList.filter(t => t.id !== id);
-        renderTeacherTopicList();
-    }
-
+    // 1. GENERATE LINK PENDEK & RAPI
     function generateShareableLink() {
-        if (vocabList.length === 0) {
-            alert("⚠️ Harap tambahkan minimal 1 topik sebelum membuat link!");
-            return;
-        }
+      const level = document.getElementById('levelSelect').value;
+      const topic = document.getElementById('topicSelect').value;
+      const voice = document.getElementById('voiceSelect').value;
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
 
-        const config = {
-            level: document.getElementById('targetLevelInput').value || 'General Class',
-            start: document.getElementById('startDateInput').value || '-',
-            due: document.getElementById('dueDateInput').value || '-',
-            voice: document.getElementById('voiceSelect').value,
-            topics: vocabList
-        };
+      // Ambil Base URL tanpa query parameter lama
+      const baseUrl = window.location.origin + window.location.pathname;
 
-        try {
-            // Menggunakan Kompresi EncodeURIComponent yang Ringkas & Sangat Aman di URL HP
-            const jsonString = JSON.stringify(config);
-            const compressedData = LZString.compressToEncodedURIComponent(jsonString);
-            
-            const baseUrl = window.location.href.split('?')[0];
-            const studentUrl = `${baseUrl}?mode=student&data=${compressedData}`;
+      // Gunakan URLSearchParams dengan singkatan parameter agar link sangat ringkas
+      const params = new URLSearchParams();
+      params.set('mode', 'student');
+      params.set('l', level);
+      params.set('t', topic);
+      params.set('v', voice);
+      if (startDate) params.set('s', startDate);
+      if (endDate) params.set('e', endDate);
 
-            // Tampilkan ke Input Box hasil link
-            const resultBox = document.getElementById('linkResultBox');
-            const linkInput = document.getElementById('generatedLinkInput');
-            resultBox.classList.remove('hidden');
-            linkInput.value = studentUrl;
+      const shareableURL = `${baseUrl}?${params.toString()}`;
 
-            // Percobaan salin otomatis ke Clipboard
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(studentUrl).then(() => {
-                    alert("✅ Success! Link siswa berhasil disalin ke clipboard.\n\nLink juga dapat dilihat di kotak kuning bawah button.");
-                }).catch(() => {
-                    showFallbackCopyPrompt(studentUrl);
-                });
-            } else {
-                showFallbackCopyPrompt(studentUrl);
-            }
-        } catch (err) {
-            console.error("Gagal meng-generate link:", err);
-            alert("❌ Terjadi kesalahan saat membuat link. Pastikan CDN LZString sudah dimuat.");
-        }
+      // Salin ke Clipboard secara aman lintas device
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(shareableURL).then(() => {
+          alert("✅ Link Ringkas Siswa Berhasil Disalin!\n\nLink ini sudah optimal dan dapat langsung dikirim ke WhatsApp siswa.");
+        }).catch(() => prompt("Salin link khusus siswa di bawah ini:", shareableURL));
+      } else {
+        prompt("Salin link khusus siswa di bawah ini:", shareableURL);
+      }
     }
 
-    function showFallbackCopyPrompt(url) {
-        alert("✅ Link Siswa Berhasil Dibuat!\nSilakan salin link yang muncul pada kotak kuning di bawah tombol.");
-    }
-
-    // MEMBACA URL SAAT SISWA MEMBUKA LINK
+    // 2. DETEKSI PARAMETER URL SAAT HALAMAN DIBUKA
     window.addEventListener('DOMContentLoaded', () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const compressedData = urlParams.get('data');
-        const mode = urlParams.get('mode');
+      const urlParams = new URLSearchParams(window.location.search);
+      const mode = urlParams.get('mode');
 
-        if (compressedData && mode === 'student') {
-            try {
-                let decompressedJson = LZString.decompressFromEncodedURIComponent(compressedData);
+      const teacherPanel = document.getElementById('teacherSetupPanel');
+      const studentBadge = document.getElementById('studentBadge');
 
-                // Fallback dekompresi metode lama jika menggunakan link versi sebelumnya
-                if (!decompressedJson) {
-                    decompressedJson = LZString.decompressFromBase64(decodeURIComponent(compressedData));
-                }
+      if (mode === 'student') {
+        if (teacherPanel) teacherPanel.classList.add('hidden');
+        if (studentBadge) studentBadge.classList.remove('hidden');
 
-                if (!decompressedJson) throw new Error("Data korup atau tidak valid");
+        // Parsing parameter ringkas
+        if (urlParams.get('l')) activeConfig.level = urlParams.get('l');
+        if (urlParams.get('t')) activeConfig.topic = urlParams.get('t');
+        if (urlParams.get('v')) activeConfig.voice = urlParams.get('v');
+        if (urlParams.get('s')) activeConfig.startDate = urlParams.get('s');
+        if (urlParams.get('e')) activeConfig.endDate = urlParams.get('e');
 
-                const config = JSON.parse(decompressedJson);
-
-                // Tampilkan Panel Siswa
-                document.getElementById('teacherPanel').classList.add('hidden');
-                document.getElementById('studentPanel').classList.remove('hidden');
-
-                document.getElementById('studentMeta').innerHTML = `
-                    <strong>Class Level:</strong> ${config.level} | 
-                    <strong>Start:</strong> ${config.start} | 
-                    <strong>Due:</strong> ${config.due} | 
-                    <strong>Voice:</strong> <span class="badge">${config.voice}</span>
-                `;
-
-                const studentTopicContainer = document.getElementById('studentTopicContainer');
-                if (config.topics && config.topics.length > 0) {
-                    studentTopicContainer.innerHTML = config.topics.map((item, idx) => `
-                        <div class="topic-card">
-                            <div style="display: flex; align-items: center;">
-                                <span style="font-size: 28px; margin-right: 15px;">
-                                    ${item.image.startsWith('http') ? `<img src="${item.image}" alt="img">` : item.image}
-                                </span>
-                                <div>
-                                    <h3 style="margin: 0; color: #006699;">${idx + 1}. ${item.word}</h3>
-                                    <p style="margin: 3px 0 0 0; color: #666;">${item.translation}</p>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    studentTopicContainer.innerHTML = `<p>Tidak ada topik dalam tugas ini.</p>`;
-                }
-
-            </div> catch (e) {
-                console.error("Gagal membaca data link siswa:", e);
-                alert("❌ Gagal membaca link! Pastikan link tersalin lengkap tanpa terpotong.");
-            }
+        // Validasi Tanggal
+        const today = new Date().toISOString().split('T')[0];
+        if (activeConfig.startDate && today < activeConfig.startDate) {
+          alert("⚠️ Akses tugas ini belum dibuka.");
+        } else if (activeConfig.endDate && today > activeConfig.endDate) {
+          alert("⚠️ Masa pengerjaan tugas ini sudah berakhir.");
         }
-    });
-</script>
+      }
 
+      updateDisplayInfo();
+      initSpeechRecognition();
+    });
+
+    function updateDisplayInfo() {
+      document.getElementById('displayTopic').innerText = activeConfig.topic;
+      document.getElementById('displayLevel').innerText = activeConfig.level;
+    }
+
+    function speakText(text, callback) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = activeConfig.voice.includes('UK') ? 'en-GB' : 'en-US';
+        utterance.rate = 0.9;
+        if (callback) utterance.onend = callback;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    function initSpeechRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) return;
+
+      recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        isRecording = true;
+        const micBtn = document.getElementById('micBtn');
+        if (micBtn) {
+          micBtn.classList.add('recording');
+          micBtn.innerText = '🔴 Listening... Speak Now!';
+        }
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        processStudentAnswer(transcript);
+      };
+
+      recognition.onerror = () => {
+        resetMicButton();
+        alert("Mikrofon mengalami kendala atau tidak diizinkan. Silakan coba lagi.");
+      };
+
+      recognition.onend = () => {
+        resetMicButton();
+      };
+    }
+
+    function resetMicButton() {
+      isRecording = false;
+      const micBtn = document.getElementById('micBtn');
+      if (micBtn) {
+        micBtn.classList.remove('recording');
+        micBtn.innerText = '🎙️ Tap to Speak Answer';
+      }
+    }
+
+    function startPractice() {
+      const name = document.getElementById('studentName').value.trim();
+      if (!name) {
+        alert("Silakan masukkan nama Anda terlebih dahulu!");
+        return;
+      }
+
+      const targetSentence = targetPrompts[activeConfig.topic] || targetPrompts['Ocean Animals'];
+      const practiceArea = document.getElementById('practiceArea');
+
+      practiceArea.innerHTML = `
+        <p style="font-size: 14px; color: #666; margin-bottom: 4px;">Listen and repeat this sentence:</p>
+        <p id="targetSentenceText" style="font-size: 20px; font-weight: bold; color: var(--primary-color); background: #eef9ff; padding: 12px; border-radius: 8px;">
+          "${targetSentence}"
+        </p>
+        <button id="micBtn" class="btn btn-mic" onclick="toggleListening()">
+          🎙️ Tap to Speak Answer
+        </button>
+        <div id="feedbackContainer"></div>
+      `;
+
+      speakText(`Hello ${name}. Please repeat after me: ${targetSentence}`);
+    }
+
+    function toggleListening() {
+      if (!recognition) {
+        alert("Fitur pengenal suara tidak didukung di browser ini. Silakan gunakan Google Chrome.");
+        return;
+      }
+      if (isRecording) {
+        recognition.stop();
+      } else {
+        recognition.start();
+      }
+    }
+
+    function calculateAccuracy(target, spoken) {
+      const clean = (str) => str.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().split(/\s+/);
+      const targetWords = clean(target);
+      const spokenWords = clean(spoken);
+
+      if (spokenWords.length === 0 || targetWords.length === 0) return 0;
+
+      let matchedWords = 0;
+      targetWords.forEach(word => {
+        if (spokenWords.includes(word)) matchedWords++;
+      });
+
+      const accuracy = Math.round((matchedWords / targetWords.length) * 100);
+      return Math.min(100, accuracy);
+    }
+
+    function saveToGoogleSheets(studentData) {
+      const statusElement = document.getElementById('syncStatus');
+      if (GOOGLE_SHEET_WEB_APP_URL === "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE") {
+        if (statusElement) statusElement.innerText = "ℹ️ Hasil tersimpan secara lokal di layar.";
+        return;
+      }
+
+      fetch(GOOGLE_SHEET_WEB_APP_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(studentData)
+      })
+      .then(() => {
+        if (statusElement) statusElement.innerText = "✅ Hasil berhasil dikirim ke Google Sheets Guru!";
+      })
+      .catch(err => {
+        if (statusElement) statusElement.innerText = "❌ Gagal mengirim hasil. Periksa koneksi internet.";
+      });
+    }
+
+    function processStudentAnswer(spokenText) {
+      const name = document.getElementById('studentName').value.trim();
+      const targetSentence = targetPrompts[activeConfig.topic] || targetPrompts['Ocean Animals'];
+      const score = calculateAccuracy(targetSentence, spokenText);
+
+      let stars = '⭐';
+      let badgeLabel = 'Keep Trying!';
+      let badgeClass = 'badge-try';
+      let audioFeedback = "Good effort! Try pronouncing each word clearly.";
+
+      if (score >= 90) {
+        stars = '⭐⭐⭐⭐⭐';
+        badgeLabel = '🏆 Ocean Master (Gold)';
+        badgeClass = 'badge-gold';
+        audioFeedback = "Outstanding! Perfect pronunciation!";
+      } else if (score >= 70) {
+        stars = '⭐⭐⭐⭐';
+        badgeLabel = '🥇 Marine Scholar (Silver)';
+        badgeClass = 'badge-silver';
+        audioFeedback = "Great job! Your speaking is very clear!";
+      } else if (score >= 50) {
+        stars = '⭐⭐⭐';
+        badgeLabel = '🥈 Explorer Badge (Bronze)';
+        badgeClass = 'badge-bronze';
+        audioFeedback = "Nice try! Let's practice one more time!";
+      }
+
+      const feedbackContainer = document.getElementById('feedbackContainer');
+      feedbackContainer.innerHTML = `
+        <div class="score-card">
+          <p style="margin: 0; font-size: 14px; color: #555;">You said: <em>"${spokenText}"</em></p>
+          
+          <div style="font-size: 24px; font-weight: bold; margin-top: 10px; color: var(--primary-color);">
+            Accuracy Score: ${score}%
+          </div>
+          
+          <div class="score-meter">
+            <div class="score-fill" style="width: ${score}%;"></div>
+          </div>
+
+          <div class="stars-display">${stars}</div>
+          <div><span class="badge-reward ${badgeClass}">${badgeLabel}</span></div>
+          <div id="syncStatus" class="sync-status">Menyimpan hasil ke Google Sheets...</div>
+        </div>
+      `;
+
+      saveToGoogleSheets({
+        studentName: name,
+        topic: activeConfig.topic,
+        level: activeConfig.level,
+        score: score,
+        badge: badgeLabel
+      });
+
+      speakText(audioFeedback);
+    }
+  </script>
 </body>
 </html>
